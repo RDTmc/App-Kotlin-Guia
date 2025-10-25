@@ -13,9 +13,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.milsabores.appkotlin_guia.R
@@ -33,12 +35,14 @@ fun HomeScreen() {
                 .padding(innerPadding)
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp, alignment = Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("¡Bienvenido!")
-            Button(onClick = { /* acción futura */ }) {
-                Text("Ir a la segunda pantalla")
-            }
+            Text("¡Bienvenido!",
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+            )
+
             Image(
                 painter = painterResource(id = R.drawable.logo_pasteleria),
                 contentDescription = "Logo App",
@@ -47,6 +51,18 @@ fun HomeScreen() {
                     .height(150.dp),
                 contentScale = ContentScale.Fit
             )
+
+            Button(onClick = { /*TODO*/ }) {
+                Text("Iniciar Sesión")
+            }
+
+            Button(onClick = { /*TODO*/ }) {
+                Text("Registrarse")
+            }
+
+            Button(onClick = { /* acción futura */ }) {
+                Text("Ir a la segunda pantalla")
+            }
         }
     }
 }
