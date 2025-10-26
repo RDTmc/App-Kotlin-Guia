@@ -18,6 +18,7 @@ import com.milsabores.appkotlin_guia.navigation.NavigationEvent
 import com.milsabores.appkotlin_guia.ui.screens.HomeScreen
 import com.milsabores.appkotlin_guia.ui.screens.ProfileScreen
 import com.milsabores.appkotlin_guia.ui.screens.RegistroScreen
+import com.milsabores.appkotlin_guia.ui.screens.ResumenScreen
 import com.milsabores.appkotlin_guia.ui.theme.AppKotlin_GuiaTheme
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
@@ -81,6 +82,10 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoute.Settings.route) {
                             //SettingScreen(navController,viewModel)
+                        }
+
+                        composable(AppRoute.Resumen.route) {
+                            ResumenScreen(viewModelRegistro)
                         }
                     }
                 }
