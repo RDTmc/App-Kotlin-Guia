@@ -1,47 +1,70 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
+import android.app.Application
 import android.util.Patterns
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.milsabores.appkotlin_guia.model.Users
 import com.milsabores.appkotlin_guia.model.UsuarioErrores
 import com.milsabores.appkotlin_guia.model.UsuarioUiState
+import com.milsabores.appkotlin_guia.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class UsuarioViewModel: ViewModel() {
+class UsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
-    //declaramos el estado interno mutable
-    private val _estado= MutableStateFlow(UsuarioUiState())
-    //expone el estado de manera publica y es de solo lectura
+    // Repo con contexto de aplicación
+    private val repo: UsuarioRepository = UsuarioRepository.get(application)
+
+    // Declaramos el estado interno mutable
+    private val _estado = MutableStateFlow(UsuarioUiState())
+
+    // Expone el estado de manera publica y es de solo lectura
     val estado: StateFlow<UsuarioUiState> = _estado
 
-    //actualiza el campo nombre
-    fun onNombreChange(nuevoNombre:String){
-        _estado.update { it.copy(nombre = nuevoNombre, errores = it.errores.copy(nombre=null)) }
-    }
-    //actualiza el campo correo
-    fun onCorreoChange(nuevoCorreo:String){
-        _estado.update { it.copy(correo = nuevoCorreo, errores = it.errores.copy(correo =null)) }
+
+    /* ---------- Setters de UI state ---------- */
+
+    // Actualiza el campo nombre
+    fun onNombreChange(nuevoNombre: String) {
+        _estado.update { it.copy(nombre = nuevoNombre, errores = it.errores.copy(nombre = null)) }
     }
 
-    fun onContrasenaChange(nuevaContrasena:String){
-        _estado.update { it.copy(contrasena = nuevaContrasena, errores = it.errores.copy(contrasena =null)) }
+    // Actualiza el campo correo
+    fun onCorreoChange(nuevoCorreo: String) {
+        _estado.update { it.copy(correo = nuevoCorreo, errores = it.errores.copy(correo = null)) }
     }
 
-    fun onDireccionChange(nuevaDireccion:String){
-        _estado.update { it.copy(direccion = nuevaDireccion, errores = it.errores.copy(direccion =null)) }
+    fun onContrasenaChange(nuevaContrasena: String) {
+        _estado.update {
+            it.copy(
+                contrasena = nuevaContrasena,
+                errores = it.errores.copy(contrasena = null)
+            )
+        }
     }
 
-    fun onAceptarTerminosChange(nuevoAceptarTerminos: Boolean){
+    fun onDireccionChange(nuevaDireccion: String) {
+        _estado.update {
+            it.copy(
+                direccion = nuevaDireccion,
+                errores = it.errores.copy(direccion = null)
+            )
+        }
+    }
+
+    fun onAceptarTerminosChange(nuevoAceptarTerminos: Boolean) {
         _estado.update { it.copy(aceptaTerminos = nuevoAceptarTerminos) }
     }
 
-    //validacion global del formulario
+    /* ---------- Validación Formulario ---------- */
 
-    fun estaValidadoElFormulario(): Boolean{
+    fun estaValidadoElFormulario(): Boolean {
         //el estado actual del formulario
-        val formularioActual=_estado.value
-        val errores= UsuarioErrores(
+        val formularioActual = _estado.value
+        val errores = UsuarioErrores(
             nombre = if (formularioActual.nombre.isBlank()) "El campo es obligatorio" else null,
             correo = if (!Patterns.EMAIL_ADDRESS.matcher(formularioActual.correo)
                     .matches()
@@ -50,27 +73,97 @@ class UsuarioViewModel: ViewModel() {
             direccion = if (formularioActual.direccion.isBlank()) "El campo es obligatorio" else null,
         )
 
-        //listOfNotNull retorna una lista de los elementos que "no sean nulos"
-        val hayErrores=listOfNotNull(
+        // listOfNotNull retorna una lista de los elementos que "no sean nulos"
+        val hayErrores = listOfNotNull(
             errores.nombre,
             errores.correo,
             errores.contrasena,
             errores.direccion
-        ).isNotEmpty()//retorna true si la coleccion no esta vacia
-
-        _estado.update { it.copy(errores=errores) }
-
-        return if(hayErrores) false
+        ).isNotEmpty() // Retorna true si la coleccion no esta vacia
+        _estado.update { it.copy(errores = errores) }
+        return if (hayErrores) false
         else true
-
-        //return !hayErrores
-
-
-
-
-
     }
 
+    /* ---------- Operaciones Room (CRUD) ---------- */
 
+    /** Crear usuario con los datos del estado actual (tras validar y aceptar términos). */
 
+    fun registrarEnDB(onSuccess: (() -> Unit)? = null) {
+        val estadoActual = _estado.value
+        if (!estaValidadoElFormulario() || !estadoActual.aceptaTerminos) return
+        viewModelScope.launch {
+            repo.crear(
+                Users(
+                    nombre = estadoActual.nombre,
+                    correo = estadoActual.correo,
+                    contrasena = estadoActual.contrasena,
+                    direccion = estadoActual.direccion
+                )
+            )
+            onSuccess?.invoke()
+
+        }
+    }
+
+    /** Login simple: consulta por credenciales y entrega true/false. */
+    fun login(correo: String, contrasena: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            repo.porCredenciales(correo, contrasena).collect { user ->
+                onResult(user != null)
+            }
+        }
+    }
+
+    /** Cargar datos al estado a partir de un correo. */
+    fun cargarUsuarioPorCorreo(correo: String) {
+        viewModelScope.launch {
+            repo.porCorreo(correo).collect { user ->
+                user?.let {
+                    _estado.update {
+                        it.copy(
+                            nombre = user.nombre,
+                            correo = user.correo,
+                            contrasena = user.contrasena,
+                            direccion = user.direccion,
+                            errores = UsuarioErrores()
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /** Actualizar un usuario existente por id usando los datos del estado. */
+
+    fun actualizarUsuarioExistente(id: Int) {
+        val estadoActual = _estado.value
+        viewModelScope.launch {
+            repo.actualizar(
+                Users(
+                    id,
+                    estadoActual.nombre,
+                    estadoActual.correo,
+                    estadoActual.contrasena,
+                    estadoActual.direccion
+                )
+            )
+        }
+    }
+
+    /** Eliminar un usuario por id usando los datos del estado actual. */
+    fun eliminarUsuario(id: Int) {
+        val estadoActual = _estado.value
+        viewModelScope.launch {
+            repo.eliminar(
+                Users(
+                    id,
+                    estadoActual.nombre,
+                    estadoActual.correo,
+                    estadoActual.contrasena,
+                    estadoActual.direccion
+                )
+            )
+        }
+    }
 }

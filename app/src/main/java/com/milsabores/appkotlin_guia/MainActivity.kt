@@ -16,10 +16,12 @@ import androidx.navigation.compose.rememberNavController
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.navigation.NavigationEvent
 import com.milsabores.appkotlin_guia.ui.screens.HomeScreen
+import com.milsabores.appkotlin_guia.ui.screens.PantallaEstado
 import com.milsabores.appkotlin_guia.ui.screens.ProfileScreen
 import com.milsabores.appkotlin_guia.ui.screens.RegistroScreen
 import com.milsabores.appkotlin_guia.ui.screens.ResumenScreen
 import com.milsabores.appkotlin_guia.ui.theme.AppKotlin_GuiaTheme
+import com.milsabores.appkotlin_guia.viewmodel.EstadoViewModel
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity() {
             AppKotlin_GuiaTheme{
                 val viewModel: MainViewModel = viewModel()
                 val viewModelRegistro: UsuarioViewModel =viewModel()
+                val estadoViewModel: EstadoViewModel = viewModel()
                 val navController = rememberNavController()
 
                 LaunchedEffect(Unit) {
@@ -86,6 +89,9 @@ class MainActivity : ComponentActivity() {
 
                         composable(AppRoute.Resumen.route) {
                             ResumenScreen(viewModelRegistro)
+                        }
+                        composable(AppRoute.Estado.route) {
+                            PantallaEstado(viewModel = estadoViewModel)
                         }
                     }
                 }

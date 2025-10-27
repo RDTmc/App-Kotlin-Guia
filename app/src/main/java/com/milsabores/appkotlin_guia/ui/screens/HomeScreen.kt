@@ -91,6 +91,11 @@ fun HomeScreen(
                 Button(onClick = {viewModel.navigateTo(AppRoute.Register)}) {
                     Text("Ir a Registro")
                 }
+
+                Button(onClick = { viewModel.navigateTo(AppRoute.Estado) }) {
+                    Text("Ir a Modo Especial")
+                }
+
             }
 
         }

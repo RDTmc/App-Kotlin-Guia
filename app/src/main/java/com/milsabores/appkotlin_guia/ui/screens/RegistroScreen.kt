@@ -128,7 +128,7 @@ fun RegistroScreen(
                     onClick = {
                         if (viewModel.estaValidadoElFormulario() && estado.aceptaTerminos) {
                             //El nav controller debería ir a la pantalla de resumen
-                            navController.navigate(AppRoute.Resumen.route)
+                            navController.navigate(AppRoute.Home.route)
 
                         }
                     },

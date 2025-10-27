@@ -8,6 +8,9 @@ sealed class AppRoute(val route:String) {
 
     data object Resumen : AppRoute("resumen")
 
+    data object Estado : AppRoute("estado")
+
+
     data class Detail (val itemId:String): AppRoute("detail/{itemId}")
     {
         fun buildRoute():String{
