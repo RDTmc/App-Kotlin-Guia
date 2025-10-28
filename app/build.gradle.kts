@@ -65,6 +65,7 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("androidx.compose.foundation:foundation:1.9.4")
     implementation(libs.androidx.datastore.preferences.core)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
