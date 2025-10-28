@@ -15,19 +15,30 @@ val Context.dataStore:DataStore<Preferences> by preferencesDataStore(name = PREF
 class EstadoDataStore(private val context:Context){
 
     private val ESTADO_BOTON= booleanPreferencesKey("estado_boton")
+    private val KEY_ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
+    private val KEY_GUEST_MODE      = booleanPreferencesKey("guest_mode")
+
+    // 🔹 Flujos de lectura
+    val onboardingDone: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_DONE] ?: false }
+    val guestMode: Flow<Boolean>      = context.dataStore.data.map { it[KEY_GUEST_MODE] ?: false }
 
     //escribe en el archivo de preferencias
+    suspend fun setOnboardingDone(done: Boolean) {
+        context.dataStore.edit { it[KEY_ONBOARDING_DONE] = done }
+    }
+
+    suspend fun resetOnboarding() {
+        context.dataStore.edit { it[booleanPreferencesKey("onboarding_done")] = false }
+    }
+
+    suspend fun setGuestMode(on: Boolean) {
+        context.dataStore.edit { it[KEY_GUEST_MODE] = on }
+    }
     suspend fun guardarEstado(nuevoEstado:Boolean){
         context.dataStore.edit { preferencias ->
             preferencias[ESTADO_BOTON]=nuevoEstado
         }
     }
-    //lee en el archivo de preferencias
-    /* suspend fun obtenerEstado(): Flow<Boolean?>{
-         return context.dataStore.data.map { preferencias ->
-             preferencias[ESTADO_BOTON]
-         }
-     }*/
     suspend fun obtenerEstado(): Flow<Boolean?> {
         return context.dataStore.data.map { preferencias ->
             preferencias[ESTADO_BOTON]
