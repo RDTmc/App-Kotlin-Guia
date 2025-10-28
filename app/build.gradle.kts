@@ -70,6 +70,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
 
 
     testImplementation(libs.junit)
