@@ -23,6 +23,7 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
 
     // Expone el estado de manera publica y es de solo lectura
     val estado: StateFlow<UsuarioUiState> = _estado
+    val usuariosFlow = repo.listar() // Flow<List<Users>>
 
 
     /* ---------- Setters de UI state ---------- */
