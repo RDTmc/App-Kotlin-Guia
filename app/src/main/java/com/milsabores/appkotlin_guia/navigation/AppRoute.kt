@@ -15,10 +15,13 @@ sealed class AppRoute(val route:String) {
     data object Estado : AppRoute("estado")
 
 
-    data class Detail (val itemId:String): AppRoute("detail/{itemId}")
-    {
+    data class Detail (val itemId:String): AppRoute("detail/{itemId}") {
         fun buildRoute():String{
             return route.replace("{itemId}",itemId)
         }
+    }
+    data object Product : AppRoute("product/{id}") {
+        fun build(id: String) = "product/$id"
+        const val ARG_ID = "id"
     }
 }
