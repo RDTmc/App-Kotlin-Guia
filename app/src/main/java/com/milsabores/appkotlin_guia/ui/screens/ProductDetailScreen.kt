@@ -1,6 +1,5 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -33,17 +32,26 @@ import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
+import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.ProductDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
-    navController: NavController
+    navController: NavController,
+    productId: String
 ) {
     // VM con SavedStateHandle (Compose lo provee en esta destination)
     val vm: ProductDetailViewModel = viewModel()
+    val catalogVm: CatalogViewModel = viewModel()
     val ui by vm.ui.collectAsState()
     val ctx = LocalContext.current
+
+    // Cargar una sola vez cuando recibimos el id
+    LaunchedEffect(productId) {
+        vm.load(productId, catalogVm)
+    }
+
     val p = ui.product
 
     Scaffold(
@@ -162,9 +170,8 @@ fun ProductDetailScreen(
                 supportingText = { Text("${ui.mensajeCount}/30") },
                 isError = ui.mensajeError != null
             )
-            if (ui.mensajeError != null) {
-                Text(ui.mensajeError!!, color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall)
+            ui.mensajeError?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             // Similares
@@ -209,7 +216,11 @@ private fun FullscreenZoomDialog(product: Product, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val res = resIdFor(ctx, product.imagen)
     var scale by remember { mutableFloatStateOf(1f) }
-    val state = remember { TransformableState { zoomChange, _, _ -> scale = (scale * zoomChange).coerceIn(1f, 3f) } }
+    val state = remember {
+        TransformableState { zoomChange, _, _ ->
+            scale = (scale * zoomChange).coerceIn(1f, 3f)
+        }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
