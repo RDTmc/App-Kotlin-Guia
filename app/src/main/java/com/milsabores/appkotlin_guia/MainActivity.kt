@@ -13,9 +13,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.milsabores.appkotlin_guia.model.EstadoDataStore
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.navigation.NavigationEvent
@@ -155,6 +157,19 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Resumen.route) {
                             ResumenScreen(viewModelRegistro)
                         }
+
+                        composable(
+                            route = AppRoute.Product.route,
+                            arguments = listOf(navArgument(AppRoute.Product.ARG_ID) { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val productId = backStackEntry.arguments?.getString(AppRoute.Product.ARG_ID) ?: return@composable
+                            ProductDetailScreen(
+                                navController = navController,
+                                productId = productId
+                            )
+                        }
+
+
 
                         composable("usuariosTest") {
                             UsuariosListScreen(vm = viewModelRegistro)
