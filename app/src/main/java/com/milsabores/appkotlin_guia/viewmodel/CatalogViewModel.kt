@@ -1,11 +1,9 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.milsabores.appkotlin_guia.model.HomeFilter
 import com.milsabores.appkotlin_guia.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 
 class CatalogViewModel : ViewModel() {
 
@@ -25,7 +23,7 @@ class CatalogViewModel : ViewModel() {
             tags = listOf("sin azúcar"))
     )
 
-    // Seed para catálogo
+    // Seed para catálogo (fuente de verdad)
     private val catalogo: List<Product> = listOf(
         Product("TC001","Tortas Cuadradas","Torta Cuadrada de Chocolate",45000,"img/tc_chocolate.png",
             "Deliciosa torta de chocolate con capas de ganache y un toque de avellanas. Personalizable con mensajes especiales.",
@@ -71,8 +69,9 @@ class CatalogViewModel : ViewModel() {
             tags = listOf("especial", "boda"))
     )
 
-    private val _filter = MutableStateFlow(HomeFilter.TODOS)
-    val filter: StateFlow<HomeFilter> = _filter
+    // Estado expuesto
+    private val _filter = MutableStateFlow<String?>(null)         // null = "Todos"
+    val filter: StateFlow<String?> = _filter
 
     private val _featured = MutableStateFlow(destacados.take(3))
     val featured: StateFlow<List<Product>> = _featured
@@ -80,23 +79,39 @@ class CatalogViewModel : ViewModel() {
     private val _products = MutableStateFlow(catalogo)
     val products: StateFlow<List<Product>> = _products
 
-    fun setFilter(f: HomeFilter) {
+    /** f = null -> "Todos" */
+    fun setFilter(f: String?) {
         _filter.value = f
-        _products.update { applyFilter(catalogo, f) }
+        _products.value = when (f) {
+            null, "Todos" -> catalogo
+            "Cumpleaños"  -> catalogo.filter {
+                it.categoria == "Tortas Especiales" ||
+                        it.nombre.contains("Cumple", ignoreCase = true) ||
+                        it.tags.any { t -> t.equals("cumpleaños", ignoreCase = true) }
+            }
+            "Bodas"       -> catalogo.filter {
+                it.categoria == "Tortas Especiales" ||
+                        it.nombre.contains("Boda", ignoreCase = true) ||
+                        it.tags.any { t -> t.equals("boda", ignoreCase = true) }
+            }
+            "Sin azúcar"  -> catalogo.filter {
+                it.categoria.equals("Sin Azúcar", ignoreCase = true) ||
+                        it.tags.any { t -> t.equals("sin azúcar", ignoreCase = true) || t.equals("sinazucar", true) }
+            }
+            "Vegano"      -> catalogo.filter {
+                it.categoria.equals("Vegano", ignoreCase = true) ||
+                        it.tags.any { t -> t.equals("vegano", ignoreCase = true) }
+            }
+            else -> catalogo
+        }
     }
 
-    private fun applyFilter(all: List<Product>, f: HomeFilter): List<Product> = when (f) {
-        HomeFilter.TODOS       -> all
-        HomeFilter.SIN_AZUCAR  -> all.filter { it.categoria.equals("Sin Azúcar", true) || it.tags.any { t -> t.equals("sin azúcar", true) } }
-        HomeFilter.VEGANO      -> all.filter { it.categoria.equals("Vegano", true) || it.tags.any { t -> t.equals("vegano", true) } }
-        HomeFilter.CUMPLEANOS  -> all.filter { it.nombre.contains("Cumple", true) || it.tags.any { t -> t.equals("cumpleaños", true) } || it.id == "TE001" }
-        HomeFilter.BODAS       -> all.filter { it.nombre.contains("Boda", true) || it.tags.any { t -> t.equals("boda", true) } || it.id == "TE002" }
-    }
+    /** Producto por id (incluye destacados) */
+    fun getProduct(id: String): Product? =
+        (catalogo + destacados).firstOrNull { it.id == id }
 
-    fun getProduct(id: String): Product? = (products.value + featured.value).firstOrNull { it.id == id }
-
+    /** Similares por categoría o tags, desde el catálogo completo */
     fun getSimilar(to: Product, limit: Int = 10): List<Product> =
-        products.value.filter { it.id != to.id && (it.categoria == to.categoria || it.tags.any { t -> to.tags.contains(t) }) }
+        catalogo.filter { it.id != to.id && (it.categoria == to.categoria || it.tags.any { t -> to.tags.contains(t) }) }
             .take(limit)
-
 }
