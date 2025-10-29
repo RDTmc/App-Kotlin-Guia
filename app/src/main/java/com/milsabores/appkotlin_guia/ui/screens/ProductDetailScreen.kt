@@ -68,7 +68,7 @@ fun ProductDetailScreen(
                 ) {
                     // Contador
                     OutlinedButton(onClick = { vm.decQty() }) { Text("−") }
-                    // Micro-animación “brillo”
+                    // Micro-animación "brillo"
                     val target = if (ui.showShine) 1f else 0f
                     val alpha by animateFloatAsState(
                         targetValue = target,
@@ -183,12 +183,15 @@ fun ProductDetailScreen(
         }
     }
 
-    // Modal de ZOOM
-    if (ui.showZoom && ui.product != null) {
-        FullscreenZoomDialog(
-            product = ui.product,
-            onDismiss = { vm.setZoom(false) }
-        )
+    // Modal de ZOOM - CORREGIDO
+    if (ui.showZoom) {
+        val currentProduct = ui.product
+        if (currentProduct != null) {
+            FullscreenZoomDialog(
+                product = currentProduct,
+                onDismiss = { vm.setZoom(false) }
+            )
+        }
     }
 }
 
@@ -205,7 +208,7 @@ private fun FlowRowWrap(content: @Composable RowScope.() -> Unit) {
 private fun FullscreenZoomDialog(product: Product, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val res = resIdFor(ctx, product.imagen)
-    var scale by remember { mutableStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(1f) }
     val state = remember { TransformableState { zoomChange, _, _ -> scale = (scale * zoomChange).coerceIn(1f, 3f) } }
 
     Dialog(onDismissRequest = onDismiss) {

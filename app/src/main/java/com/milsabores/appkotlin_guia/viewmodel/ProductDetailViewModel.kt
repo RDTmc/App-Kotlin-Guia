@@ -1,9 +1,7 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.milsabores.appkotlin_guia.model.Product
-import com.milsabores.appkotlin_guia.navigation.AppRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -18,23 +16,24 @@ data class ProductDetailUiState(
     val mensajeCount: Int = 0,
     val mensajeError: String? = null,
     val qty: Int = 1,
-    val showShine: Boolean = false,      // micro-animación
-    val showZoom: Boolean = false        // modal zoom
+    val showShine: Boolean = false,   // micro-animación
+    val showZoom: Boolean = false     // modal zoom
 )
 
-class ProductDetailViewModel(
-    savedStateHandle: SavedStateHandle,
-    private val catalogVm: CatalogViewModel = CatalogViewModel() // para MVP; ideal inyectar
-) : ViewModel() {
+class ProductDetailViewModel : ViewModel() {
 
     private val _ui = MutableStateFlow(ProductDetailUiState())
     val ui: StateFlow<ProductDetailUiState> = _ui
 
-    init {
-        val id = savedStateHandle.get<String>(AppRoute.Product.ARG_ID)
-        val p = id?.let { catalogVm.getProduct(it) }
+    // guardamos el VM fuente para "similares"
+    private var sourceCatalogVm: CatalogViewModel? = null
+
+    /** Cargar datos al entrar a la pantalla */
+    fun load(productId: String, catalogVm: CatalogViewModel) {
+        sourceCatalogVm = catalogVm
+        val p = catalogVm.getProduct(productId)
+        val sizes = (p?.tamanos?.takeIf { it.isNotEmpty() } ?: listOf("Chico", "Mediano", "Grande"))
         _ui.update {
-            val sizes = (p?.tamanos?.takeIf { it.isNotEmpty() } ?: listOf("Chico", "Mediano", "Grande"))
             it.copy(
                 product = p,
                 tamanos = sizes,
@@ -54,8 +53,7 @@ class ProductDetailViewModel(
 
     fun incQty(stockMax: Int = 10) = _ui.update {
         val next = (it.qty + 1).coerceAtMost(stockMax)
-        val shine = next != it.qty // activar brillo si subió
-        it.copy(qty = next, showShine = shine)
+        it.copy(qty = next, showShine = next != it.qty)
     }
 
     fun decQty() = _ui.update { it.copy(qty = (it.qty - 1).coerceAtLeast(1)) }
@@ -64,5 +62,9 @@ class ProductDetailViewModel(
 
     fun setZoom(show: Boolean) = _ui.update { it.copy(showZoom = show) }
 
-    fun similar(): List<Product> = ui.value.product?.let { catalogVm.getSimilar(it) } ?: emptyList()
+    fun similar(): List<Product> {
+        val p = ui.value.product ?: return emptyList()
+        val cat = sourceCatalogVm ?: return emptyList()
+        return cat.getSimilar(p)
+    }
 }
