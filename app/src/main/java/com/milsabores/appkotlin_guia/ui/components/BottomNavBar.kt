@@ -35,7 +35,7 @@ fun BottomNavBar(
             onClick = { onSelect(BottomDest.CART) },
             icon = {
                 if (cartCount > 0) {
-                    BadgedBox(badge = { Badge { Text(cartCount.toString()) } }) {
+                    BadgedBox(badge = { Badge { Text(if (cartCount > 9) "9+" else cartCount.toString()) } }) {
                         Icon(Icons.Filled.ShoppingCart, contentDescription = "Carrito")
                     }
                 } else {
