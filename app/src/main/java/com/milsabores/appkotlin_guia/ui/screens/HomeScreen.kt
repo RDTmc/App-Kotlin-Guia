@@ -44,6 +44,7 @@ import com.milsabores.appkotlin_guia.ui.components.BottomNavBar
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
 import com.milsabores.appkotlin_guia.ui.components.TopCarrusel
 import com.milsabores.appkotlin_guia.ui.components.FilterChipsRow
+import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -52,7 +53,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel= viewModel(),
-    navController: NavController
+    navController: NavController,
+    cartVm: CartViewModel,
+    catalogVm: CatalogViewModel
+
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -61,9 +65,11 @@ fun HomeScreen(
     val featured by catalogVm.featured.collectAsState()
     val filter by catalogVm.filter.collectAsState()
     val products by catalogVm.products.collectAsState()
+    val cartUi by cartVm.ui.collectAsState()
+    val cartCount = cartUi.items.sumOf { it.quantity }
 
     var bottomSel by remember { mutableStateOf(BottomDest.HOME) }
-    val cartCount = 0 // Conectar a CartVM
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,
