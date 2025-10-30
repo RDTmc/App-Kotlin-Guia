@@ -9,7 +9,7 @@ data class CartUiState(
     val items: List<CartItem> = emptyList(),
     val subtotal: Int = 0,
     val iva: Int = 0,
-    val shipping: Int = 3900,
+    val shipping: Int = 0,
     val discount: Int = 0,
     val total: Int = 0
 )
