@@ -30,8 +30,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.Product
+import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
+import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.ProductDetailViewModel
 
@@ -39,7 +41,9 @@ import com.milsabores.appkotlin_guia.viewmodel.ProductDetailViewModel
 @Composable
 fun ProductDetailScreen(
     navController: NavController,
-    productId: String
+    productId: String,
+    cartVm: CartViewModel,
+    catalogVm: CatalogViewModel
 ) {
     // VM con SavedStateHandle (Compose lo provee en esta destination)
     val vm: ProductDetailViewModel = viewModel()
@@ -95,9 +99,22 @@ fun ProductDetailScreen(
 
                     Spacer(Modifier.weight(1f))
                     Button(
-                        onClick = { /* TODO: add to cart + nav */ },
+                        onClick = {
+                            val product = ui.product ?: return@Button
+                            val item = com.milsabores.appkotlin_guia.model.CartItem(
+                                productId = product.id,
+                                name = product.nombre,
+                                image = product.imagen,
+                                size = ui.selectedTamano,
+                                flavor = ui.selectedSabor,
+                                quantity = ui.qty,
+                                unitPrice = product.precio
+                            )
+                            navController.navigate(AppRoute.Cart.route)
+                        },
                         modifier = Modifier.height(48.dp)
-                    ) { Text("Agregar al carrito") }
+                    ) { Text("Agregar al carrito")
+                    }
                 }
             }
         }
