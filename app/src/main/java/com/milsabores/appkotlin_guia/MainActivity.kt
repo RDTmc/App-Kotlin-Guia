@@ -34,6 +34,11 @@ import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.navArgument
+import androidx.navigation.NavType
+import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,11 +53,15 @@ class MainActivity : ComponentActivity() {
                 val viewModelRegistro: UsuarioViewModel =viewModel()
                 val estadoViewModel: EstadoViewModel = viewModel()
                 val navController = rememberNavController()
+                val cartViewModel: CartViewModel = viewModel()
+                val catalogViewModel: CatalogViewModel = viewModel()
 
                 // Flags de DataStore
                 val onboardingDone by prefs.onboardingDone.collectAsState(initial = false)
                 println("DEBUG onboardingDone=$onboardingDone")
                 val guestMode by prefs.guestMode.collectAsState(initial = false)
+                val cartUi by cartVm.ui.collectAsState()
+                val cartCount = cartUi.items.sumOf { it.quantity }
                 val scope = rememberCoroutineScope()
 
 
@@ -142,7 +151,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoute.Home.route) {
-                            HomeScreen(viewModel,navController)
+                            HomeScreen(
+                                viewModel = viewModel,
+                                navController = navController,
+                                cartVm = cartViewModel,
+                                catalogVm = catalogViewModel
+                            )
                         }
                         composable(AppRoute.Register.route) {
                             RegistroScreen(viewModelRegistro,navController)
@@ -165,12 +179,18 @@ class MainActivity : ComponentActivity() {
                             val productId = backStackEntry.arguments?.getString(AppRoute.Product.ARG_ID) ?: return@composable
                             ProductDetailScreen(
                                 navController = navController,
-                                productId = productId
+                                productId = productId,
+                                cartVm = cartViewModel,
+                                catalogVm = catalogViewModel
+
                             )
                         }
 
                         composable(AppRoute.Cart.route) {
-                            CartScreen(navController = navController)
+                            CartScreen(
+                                navController = navController,
+                                vm = cartViewModel
+                            )
                         }
 
 
