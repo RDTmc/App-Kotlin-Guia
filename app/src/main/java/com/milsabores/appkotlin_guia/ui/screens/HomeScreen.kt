@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -34,12 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.components.BottomDest
 import com.milsabores.appkotlin_guia.ui.components.BottomNavBar
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
 import com.milsabores.appkotlin_guia.ui.components.TopCarrusel
-import com.milsabores.appkotlin_guia.ui.components.FilterCategoriaRow
+import com.milsabores.appkotlin_guia.ui.components.FilterChipsRow
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -49,9 +53,9 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     viewModel: MainViewModel= viewModel(),
     navController: NavController
-){
-    val drawerState= rememberDrawerState(DrawerValue.Closed)
-    val scope= rememberCoroutineScope()
+) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
     // Catalogo
     val catalogVm: CatalogViewModel = viewModel()
     val featured by catalogVm.featured.collectAsState()
@@ -62,12 +66,12 @@ fun HomeScreen(
     val cartCount = 0 // Conectar a CartVM
 
     ModalNavigationDrawer(
-        drawerState=drawerState,
+        drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text("Menu",Modifier.padding(16.dp))
+                Text("Menu", Modifier.padding(16.dp))
                 NavigationDrawerItem(
-                    label = {Text("Ir al Perfil")},
+                    label = { Text("Ir al Perfil") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -79,10 +83,10 @@ fun HomeScreen(
         }
     )
     {
-        Scaffold (
+        Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {Text("Pantalla Home")},
+                    title = { Text("Pantalla Home") },
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch { drawerState.open() }
@@ -101,7 +105,7 @@ fun HomeScreen(
                         when (dest) {
                             BottomDest.HOME -> Unit
                             BottomDest.MENU -> viewModel.navigateTo(AppRoute.Resumen)
-                            BottomDest.CART -> navController.navigate("cart")
+                            BottomDest.CART -> navController.navigate(AppRoute.Cart.route)
                             BottomDest.PROFILE -> viewModel.navigateTo(AppRoute.Profile)
                         }
                     }
@@ -116,14 +120,14 @@ fun HomeScreen(
                 // Carrusel
                 TopCarrusel(
                     items = featured.take(3),
-                    onSeeMore = { /* TODO: navegar a catálogo con filtro */ },
-                    onOpenProduct = { p -> /* TODO: nav a product/{id} */ }
+                    onSeeMore = { catalogVm.setFilter(null) }, // "Ver todos" rápido
+                    onOpenProduct = { p -> openProduct(navController, p) }
                 )
 
                 Spacer(Modifier.height(8.dp))
 
                 // Filtros
-                FilterCategoriaRow (
+                FilterChipsRow(
                     selected = filter,
                     onSelected = { f -> catalogVm.setFilter(f) }
                 )
@@ -137,12 +141,14 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(products) { p ->
-                        ProductCard(product = p, onOpen = {
-                            /* TODO: nav a product/{id} */
-                        })
+                        ProductCard(product = p, onOpen = { openProduct(navController, it) })
                     }
                 }
             }
         }
     }
+}
+
+private fun openProduct(nav: NavController, p: Product) {
+    nav.navigate(AppRoute.Product.build(p.id))
 }

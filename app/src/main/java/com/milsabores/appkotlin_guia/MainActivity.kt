@@ -169,6 +169,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable(AppRoute.Cart.route) {
+                            CartScreen(navController = navController)
+                        }
 
 
                         composable("usuariosTest") {

@@ -14,6 +14,8 @@ sealed class AppRoute(val route:String) {
 
     data object Estado : AppRoute("estado")
 
+    data object Cart : AppRoute("cart")
+
 
     data class Detail (val itemId:String): AppRoute("detail/{itemId}") {
         fun buildRoute():String{
