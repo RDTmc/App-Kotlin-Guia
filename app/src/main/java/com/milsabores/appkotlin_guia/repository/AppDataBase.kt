@@ -5,10 +5,19 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.milsabores.appkotlin_guia.model.Users
+import com.milsabores.appkotlin_guia.model.CartEntity
 
-@Database(entities = [Users::class], version = 1, exportSchema = false)
+@Database(
+    entities = [
+        Users::class,
+        CartEntity::class,      // 👈 nueva
+    ],
+    version = 2,               // 👈 súbelo 1
+    exportSchema = false
+)
 abstract class AppDataBase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    abstract fun cartDao(): CartDao
 
     companion object {
         @Volatile private var INSTANCE: AppDataBase? = null
