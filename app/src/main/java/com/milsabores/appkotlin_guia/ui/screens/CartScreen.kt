@@ -5,139 +5,136 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.CartItem
 import com.milsabores.appkotlin_guia.navigation.AppRoute
-import com.milsabores.appkotlin_guia.ui.components.AuthRequiredDialog
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
+import androidx.compose.material3.*
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     navController: NavController,
-    vm: CartViewModel = viewModel()
+    vm: CartViewModel,
+    isGuest: Boolean,
+    onLoginRequested: () -> Unit
 ) {
     val ui by vm.ui.collectAsState()
     var showAuthDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Carrito de compras") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
-        }
-    ) { pv ->
+    Surface(
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
-                .padding(pv)
                 .fillMaxSize()
+                .padding(16.dp)
         ) {
+
+            Text(
+                text = "Carrito de compras",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(16.dp))
+
             if (ui.items.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No tienes productos en el carrito")
+                    Text("Tu carrito está vacío")
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(12.dp),
+                        .fillMaxWidth()
+                        .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(ui.items) { item ->
                         CartItemRow(
                             item = item,
-                            onInc = { vm.updateQty(item.productId, +1) },
-                            onDec = { vm.updateQty(item.productId, -1) },
+                            onInc = { vm.inc(item.productId) },
+                            onDec = { vm.dec(item.productId) },
                             onRemove = { vm.remove(item.productId) }
                         )
                     }
                 }
+            }
 
-                // Resumen
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Subtotal")
-                            Text("$${ui.subtotal}")
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("IVA (19%)")
-                            Text("$${ui.iva}")
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Envío")
-                            Text(if (ui.shipping == 0) "—" else "$${ui.shipping}")
-                        }
-                        if (ui.discount > 0) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Descuento")
-                                Text("-$${ui.discount}")
-                            }
-                        }
-                        Divider()
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Total", fontWeight = FontWeight.Bold)
-                            Text("$${ui.total}", fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = {
-                                // aquí entra la lógica:
-                                // si no está logueado → mostrar modal
-                                showAuthDialog = true
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            enabled = ui.items.isNotEmpty()
-                        ) {
-                            Text("Continuar compra")
-                        }
+            Spacer(Modifier.height(12.dp))
+
+            SummaryBox(
+                subtotal = ui.subtotal,
+                iva = ui.iva,
+                shipping = ui.shipping,
+                discount = ui.discount,
+                total = ui.total
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    if (isGuest) {
+                        // obligatorio registrarse / loguearse
+                        showAuthDialog = true
+                    } else {
+                        // aquí luego va el Checkout real
+                        navController.navigate(AppRoute.Resumen.route)
                     }
-                }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                enabled = ui.items.isNotEmpty()
+            ) {
+                Text("Continuar compra")
             }
         }
 
+        // Modal de autenticación (solo login/registro)
         if (showAuthDialog) {
-            AuthRequiredDialog(
-                onDismiss = { showAuthDialog = false },
-                onLogin = { navController.navigate(AppRoute.Register.route) },    // o AppRoute.Login si lo tienes
-                onRegister = { navController.navigate(AppRoute.Register.route) },
-                onGuest = {
-                    // permitir checkout invitado → navegar a Checkout
-                    navController.navigate(AppRoute.Resumen.route)
+            AlertDialog(
+                onDismissRequest = { showAuthDialog = false },
+                title = { Text("Inicia sesión para continuar") },
+                text = {
+                    Text("Para finalizar tu compra debes iniciar sesión o crear una cuenta.")
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showAuthDialog = false
+                        onLoginRequested()
+                    }) {
+                        Text("Ir a registro / login")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAuthDialog = false }) {
+                        Text("Cancelar")
+                    }
                 }
             )
         }
@@ -152,62 +149,107 @@ private fun CartItemRow(
     onRemove: () -> Unit
 ) {
     val ctx = LocalContext.current
-    val res = item.image?.let { resIdFor(ctx, it) } ?: 0
+    val res = resIdFor(ctx, item.image)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF8F8F8))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .background(Color.LightGray),
-            contentAlignment = Alignment.Center
-        ) {
-            if (res != 0) {
-                Image(
-                    painter = painterResource(res),
-                    contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text("IMG")
+        if (res != 0) {
+            Image(
+                painter = painterResource(res),
+                contentDescription = item.name,
+                modifier = Modifier.size(72.dp),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Sin\nimg")
             }
         }
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(12.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(item.name, fontWeight = FontWeight.SemiBold)
-            if (item.size != null || item.flavor != null) {
-                Text(
-                    listOfNotNull(item.size, item.flavor).joinToString(" • "),
-                    style = MaterialTheme.typography.bodySmall
-                )
+            if (item.size != null) {
+                Text("Tamaño: ${item.size}", style = MaterialTheme.typography.bodySmall)
             }
-            Text("Unit: $${item.unitPrice}", style = MaterialTheme.typography.bodySmall)
+            if (item.flavor != null) {
+                Text("Sabor: ${item.flavor}", style = MaterialTheme.typography.bodySmall)
+            }
+            Text("c/u $${item.unitPrice}", style = MaterialTheme.typography.bodySmall)
         }
 
-        // qty
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            horizontalAlignment = Alignment.End
         ) {
-            IconButton(onClick = onDec, enabled = item.quantity > 1) {
-                Text("−")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = onDec, enabled = item.quantity > 1) {
+                    Text("−")
+                }
+                Text(
+                    text = item.quantity.toString(),
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                OutlinedButton(onClick = onInc, enabled = item.quantity < 10) {
+                    Text("+")
+                }
             }
-            Text("${item.quantity}", fontWeight = FontWeight.Bold)
-            IconButton(onClick = onInc, enabled = item.quantity < 10) {
-                Text("+")
+            Spacer(Modifier.height(6.dp))
+            Text("Total: $${item.lineTotal}", fontWeight = FontWeight.Bold)
+            TextButton(onClick = onRemove) {
+                Text("Quitar")
             }
         }
+    }
+}
 
-        IconButton(onClick = onRemove) {
-            Icon(Icons.Default.Delete, contentDescription = "Quitar")
+@Composable
+private fun SummaryBox(
+    subtotal: Int,
+    iva: Int,
+    shipping: Int,
+    discount: Int,
+    total: Int
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(12.dp)
+    ) {
+        RowItem(label = "Subtotal", value = subtotal)
+        RowItem(label = "IVA (19%)", value = iva)
+        RowItem(label = "Envío", value = shipping)
+        if (discount != 0) {
+            RowItem(label = "Descuento", value = -discount)
         }
+        Divider(Modifier.padding(vertical = 6.dp))
+        RowItem(label = "Total", value = total, bold = true)
+    }
+}
+
+@Composable
+private fun RowItem(label: String, value: Int, bold: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label)
+        Text(
+            "$$value",
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
