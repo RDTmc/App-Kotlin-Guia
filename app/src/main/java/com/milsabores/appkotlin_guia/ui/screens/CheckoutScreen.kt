@@ -32,6 +32,33 @@ fun CheckoutScreen(
     val dateError = date.isBlank()
     val timeError = time.isBlank()
 
+    // descuentos UI
+    var useFelices by remember { mutableStateOf(false) }
+    var use50Anios by remember { mutableStateOf(false) }
+    var useDuoc by remember { mutableStateOf(false) }
+
+    // asegurar que no se activen ambos porcentuales
+    LaunchedEffect(useFelices, use50Anios) {
+        if (useFelices && use50Anios) {
+            // si activó el de 50 años, desactivamos el de 10
+            useFelices = false
+        }
+    }
+
+    // cálculo local de descuentos
+    val baseSubtotal = ui.subtotal
+    val baseIva = ui.iva
+    val baseShipping = ui.shipping
+
+    val percentDiscount = when {
+        use50Anios -> (baseSubtotal * 0.50).toInt()
+        useFelices -> (baseSubtotal * 0.10).toInt()
+        else -> 0
+    }
+
+    val shippingFinal = if (useDuoc) 0 else baseShipping
+    val totalFinal = baseSubtotal - percentDiscount + baseIva + shippingFinal
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +146,27 @@ fun CheckoutScreen(
                 }
             }
 
+            // 3.1 Descuentos (tu IL2.2)
+            Text("Descuentos disponibles", fontWeight = FontWeight.SemiBold)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = useFelices,
+                    onClick = { useFelices = !useFelices },
+                    label = { Text("FELICES50 (10%)") },
+                    enabled = !use50Anios // no dejar activar si ya está 50 años
+                )
+                FilterChip(
+                    selected = use50Anios,
+                    onClick = { use50Anios = !use50Anios },
+                    label = { Text("50 años Mil Sabores (50%)") }
+                )
+                FilterChip(
+                    selected = useDuoc,
+                    onClick = { useDuoc = !useDuoc },
+                    label = { Text("Duoc cumpleaños (envío gratis)") }
+                )
+            }
+
             // 4. Resumen del pedido
             Text("4. Resumen", fontWeight = FontWeight.SemiBold)
             if (ui.items.isEmpty()) {
@@ -127,7 +175,7 @@ fun CheckoutScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 160.dp),
+                        .heightIn(max = 140.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(ui.items) { item ->
@@ -148,14 +196,18 @@ fun CheckoutScreen(
                     label = { Text("Cupón de descuento (opcional)") }
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("Subtotal: $${ui.subtotal}")
-                Text("IVA (19%): $${ui.iva}")
-                Text("Envío: $${ui.shipping}")
-                if (ui.discount != 0) {
-                    Text("Descuento: -$${ui.discount}")
+
+                Text("Subtotal: $${baseSubtotal}")
+                Text("IVA (19%): $${baseIva}")
+                Text("Envío: $${shippingFinal}")
+                if (percentDiscount > 0) {
+                    Text("Descuento aplicado: -$${percentDiscount}")
+                }
+                if (useDuoc) {
+                    Text("Beneficio Duoc cumpleaños aplicado", color = MaterialTheme.colorScheme.primary)
                 }
                 Text(
-                    "Total: $${ui.total}",
+                    "Total a pagar: $${totalFinal}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
