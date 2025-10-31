@@ -39,6 +39,8 @@ import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.EstadoViewModel
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -55,6 +57,8 @@ class MainActivity : ComponentActivity() {
             "milsabores-db"
         ).fallbackToDestructiveMigration().build()
         val cartRepo = com.milsabores.appkotlin_guia.repository.CartRepository(db.cartDao())
+        val orderRepo = com.milsabores.appkotlin_guia.repository.OrderRepository(db.orderDao())
+
 
 
         setContent {
@@ -64,10 +68,18 @@ class MainActivity : ComponentActivity() {
                 val usuarioVm: UsuarioViewModel = viewModel()
                 val estadoVm: EstadoViewModel = viewModel()
                 val cartVm: CartViewModel = viewModel(
-                    factory = androidx.lifecycle.viewmodel.initializer{
-                        CartViewModel(cartRepo)
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
+                                @Suppress("UNCHECKED_CAST")
+                                return CartViewModel(cartRepo, orderRepo) as T
+                            }
+                            throw IllegalArgumentException("Unknown ViewModel class")
+                        }
                     }
                 )
+
+
                 val catalogVm: CatalogViewModel = viewModel()
 
                 val navController = rememberNavController()

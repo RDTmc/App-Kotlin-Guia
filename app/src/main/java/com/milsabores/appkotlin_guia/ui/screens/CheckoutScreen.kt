@@ -217,7 +217,14 @@ fun CheckoutScreen(
 
             Button(
                 onClick = {
-                    // aquí iría el guardado
+                    cartVm.placeOrder(
+                        address = address,
+                        date = date,
+                        time = time,
+                        payment = payment,
+                        shipping = shippingFinal,
+                        discount = percentDiscount
+                    )
                     navController.navigateUp()
                 },
                 enabled = !addressError && !dateError && !timeError && ui.items.isNotEmpty(),
@@ -225,6 +232,7 @@ fun CheckoutScreen(
             ) {
                 Text("Confirmar compra")
             }
+
         }
     }
 }
