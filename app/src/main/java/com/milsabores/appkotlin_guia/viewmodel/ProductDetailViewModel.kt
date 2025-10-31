@@ -1,10 +1,10 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.milsabores.appkotlin_guia.model.Product
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import com.milsabores.appkotlin_guia.model.CartItem
+
 
 data class ProductDetailUiState(
     val product: Product? = null,
@@ -16,55 +16,92 @@ data class ProductDetailUiState(
     val mensajeCount: Int = 0,
     val mensajeError: String? = null,
     val qty: Int = 1,
-    val showShine: Boolean = false,   // micro-animación
-    val showZoom: Boolean = false     // modal zoom
+    val showShine: Boolean = false,
+    val showZoom: Boolean = false
 )
 
-class ProductDetailViewModel : ViewModel() {
+class ProductDetailViewModel(
+    savedStateHandle: SavedStateHandle? = null,
+    private val catalogVm: CatalogViewModel = CatalogViewModel()   // MVP, ideal inyectar
+) : ViewModel() {
 
-    private val _ui = MutableStateFlow(ProductDetailUiState())
-    val ui: StateFlow<ProductDetailUiState> = _ui
+    private val _ui = kotlinx.coroutines.flow.MutableStateFlow(ProductDetailUiState())
+    val ui: kotlinx.coroutines.flow.StateFlow<ProductDetailUiState> = _ui
 
-    // guardamos el VM fuente para "similares"
-    private var sourceCatalogVm: CatalogViewModel? = null
-
-    /** Cargar datos al entrar a la pantalla */
+    /**
+     * Cargar datos desde el catálogo.
+     */
     fun load(productId: String, catalogVm: CatalogViewModel) {
-        sourceCatalogVm = catalogVm
         val p = catalogVm.getProduct(productId)
-        val sizes = (p?.tamanos?.takeIf { it.isNotEmpty() } ?: listOf("Chico", "Mediano", "Grande"))
-        _ui.update {
-            it.copy(
-                product = p,
-                tamanos = sizes,
-                selectedTamano = sizes.firstOrNull()
-            )
-        }
+        val sizes =
+            (p?.tamanos?.takeIf { it.isNotEmpty() } ?: listOf("Chico", "Mediano", "Grande"))
+        _ui.value = _ui.value.copy(
+            product = p,
+            tamanos = sizes,
+            selectedTamano = sizes.firstOrNull()
+        )
     }
 
-    fun setTamano(t: String) = _ui.update { it.copy(selectedTamano = t) }
-    fun setSabor(s: String) = _ui.update { it.copy(selectedSabor = s) }
+    fun setTamano(t: String) {
+        _ui.value = _ui.value.copy(selectedTamano = t)
+    }
+
+    fun setSabor(s: String) {
+        _ui.value = _ui.value.copy(selectedSabor = s)
+    }
 
     fun setMensaje(text: String) {
         val trimmed = text.take(30)
         val error = if (text.length > 30) "Máximo 30 caracteres" else null
-        _ui.update { it.copy(mensaje = trimmed, mensajeCount = trimmed.length, mensajeError = error) }
+        _ui.value = _ui.value.copy(
+            mensaje = trimmed,
+            mensajeCount = trimmed.length,
+            mensajeError = error
+        )
     }
 
-    fun incQty(stockMax: Int = 10) = _ui.update {
-        val next = (it.qty + 1).coerceAtMost(stockMax)
-        it.copy(qty = next, showShine = next != it.qty)
+    fun incQty(stockMax: Int = 10) {
+        val current = _ui.value
+        val next = (current.qty + 1).coerceAtMost(stockMax)
+        _ui.value = current.copy(
+            qty = next,
+            showShine = next != current.qty
+        )
     }
 
-    fun decQty() = _ui.update { it.copy(qty = (it.qty - 1).coerceAtLeast(1)) }
+    fun decQty() {
+        val current = _ui.value
+        _ui.value = current.copy(
+            qty = (current.qty - 1).coerceAtLeast(1)
+        )
+    }
 
-    fun consumeShine() = _ui.update { it.copy(showShine = false) }
+    fun consumeShine() {
+        _ui.value = _ui.value.copy(showShine = false)
+    }
 
-    fun setZoom(show: Boolean) = _ui.update { it.copy(showZoom = show) }
+    fun setZoom(show: Boolean) {
+        _ui.value = _ui.value.copy(showZoom = show)
+    }
 
-    fun similar(): List<Product> {
-        val p = ui.value.product ?: return emptyList()
-        val cat = sourceCatalogVm ?: return emptyList()
-        return cat.getSimilar(p)
+    fun similar(): List<Product> =
+        ui.value.product?.let { catalogVm.getSimilar(it) } ?: emptyList()
+
+    /**
+     * Construye un CartItem listo para mandarlo al CartViewModel.
+     */
+    fun toCartItem(): CartItem? {
+        val state = ui.value
+        val p = state.product ?: return null
+        return CartItem(
+            productId = p.id,
+            name = p.nombre,
+            image = p.imagen,
+            size = state.selectedTamano,
+            flavor = state.selectedSabor,
+            quantity = state.qty,
+            unitPrice = p.precio
+            // si quisieras guardar el mensaje en el carrito, puedes agregar un campo opcional
+        )
     }
 }
