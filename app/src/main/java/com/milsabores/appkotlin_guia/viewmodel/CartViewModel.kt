@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.milsabores.appkotlin_guia.model.CartItem
 import com.milsabores.appkotlin_guia.model.CartEntity
+import com.milsabores.appkotlin_guia.model.OrderEntity
 import com.milsabores.appkotlin_guia.repository.CartRepository
+import com.milsabores.appkotlin_guia.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -20,7 +22,8 @@ data class CartUiState(
 )
 
 class CartViewModel(
-    private val repo: CartRepository? = null   // 👈 null en MVP, la inyectamos en MainActivity
+    private val repo: CartRepository? = null,   // 👈 null en MVP, la inyectamos en MainActivity
+            private val orderRepo: OrderRepository? = null
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(CartUiState())
@@ -110,6 +113,39 @@ class CartViewModel(
             items.forEach { ci ->
                 r.add(ci.toEntity())
             }
+        }
+    }
+
+    // 👇 NUEVO: finalizar compra
+    fun placeOrder(
+        address: String,
+        date: String?,
+        time: String?,
+        payment: String,
+        // descuentos ya aplicados en UI → le pasamos shipping final y discount final
+        shipping: Int,
+        discount: Int
+    ) {
+        val snapshot = _ui.value
+        viewModelScope.launch {
+            // 1. guardar orden
+            orderRepo?.save(
+                OrderEntity(
+                    createdAt = System.currentTimeMillis(),
+                    address = address,
+                    date = date,
+                    time = time,
+                    payment = payment,
+                    subtotal = snapshot.subtotal,
+                    iva = snapshot.iva,
+                    shipping = shipping,
+                    discount = discount,
+                    total = snapshot.subtotal + snapshot.iva + shipping - discount
+                )
+            )
+            // 2. limpiar carrito
+            cartRepo ?.clear()
+            _ui.value = CartUiState() // limpiar UI
         }
     }
 
