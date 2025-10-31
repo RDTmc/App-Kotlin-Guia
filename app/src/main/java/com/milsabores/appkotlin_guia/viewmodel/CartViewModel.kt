@@ -1,10 +1,15 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.milsabores.appkotlin_guia.model.CartItem
+import com.milsabores.appkotlin_guia.model.CartEntity
+import com.milsabores.appkotlin_guia.repository.CartRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 data class CartUiState(
     val items: List<CartItem> = emptyList(),
     val subtotal: Int = 0,
@@ -14,62 +19,72 @@ data class CartUiState(
     val total: Int = 0
 )
 
-class CartViewModel : ViewModel() {
+class CartViewModel(
+    private val repo: CartRepository? = null   // 👈 null en MVP, la inyectamos en MainActivity
+) : ViewModel() {
 
     private val _ui = MutableStateFlow(CartUiState())
     val ui: StateFlow<CartUiState> = _ui
 
-    // 👇 inicial de prueba (puedes borrarlo cuando ya agregues desde ProductDetail)
     init {
-        setItems(
-            listOf(
-                CartItem(
-                    productId = "TC001",
-                    name = "Torta Cuadrada de Chocolate",
-                    image = "img/tc_chocolate.png",
-                    size = "10 porciones",
-                    flavor = "Chocolate",
-                    quantity = 1,
-                    unitPrice = 45000
-                )
-            )
+        // si tenemos repo, escuchamos Room
+        repo?.observeCart()
+            ?.onEach { entities ->
+                val items = entities.map { it.toDomain() }
+                _ui.value = recalc(items)
+            }
+            ?.launchIn(viewModelScope)
+    }
+
+    private fun recalc(items: List<CartItem>): CartUiState {
+        val sub = items.sumOf { it.lineTotal }
+        val iva = (sub * 0.19).toInt()
+        val shipping = if (items.isEmpty()) 0 else 3900
+        val discount = 0
+        val total = sub + iva + shipping - discount
+        return CartUiState(
+            items = items,
+            subtotal = sub,
+            iva = iva,
+            shipping = shipping,
+            discount = discount,
+            total = total
         )
     }
 
-    // ------------------ API pública ------------------
-
-    /**
-     * Sube en 1 la cantidad del producto dado, hasta 10.
-     */
-    fun inc(productId: String) {
-        updateQty(productId, +1)
+    private fun setItems(newItems: List<CartItem>) {
+        _ui.value = recalc(newItems)
     }
 
-    /**
-     * Baja en 1 la cantidad del producto dado, hasta 1.
-     */
-    fun dec(productId: String) {
-        updateQty(productId, -1)
+    fun updateQty(productId: String, delta: Int) {
+        val current = _ui.value.items
+        val updated = current.mapNotNull { item ->
+            if (item.productId == productId) {
+                val newQty = (item.quantity + delta).coerceIn(1, 10)
+                item.copy(quantity = newQty)
+            } else item
+        }
+        setItems(updated)
+        // guardar en Room
+        persistAll(updated)
     }
 
-    /**
-     * Elimina el producto del carrito.
-     */
+    fun inc(productId: String) = updateQty(productId, +1)
+    fun dec(productId: String) = updateQty(productId, -1)
+
     fun remove(productId: String) {
         val filtered = _ui.value.items.filterNot { it.productId == productId }
         setItems(filtered)
+        persistAll(filtered)
     }
 
-    /**
-     * Limpia todo el carrito.
-     */
     fun clear() {
         setItems(emptyList())
+        viewModelScope.launch {
+            repo?.clear()
+        }
     }
 
-    /**
-     * Agrega un item nuevo o aumenta el existente (match por productId + size + flavor).
-     */
     fun addOrIncrease(item: CartItem) {
         val current = _ui.value.items.toMutableList()
         val idx = current.indexOfFirst {
@@ -85,44 +100,37 @@ class CartViewModel : ViewModel() {
             current += item
         }
         setItems(current)
+        persistAll(current)
     }
 
-    /**
-     * Actualiza la cantidad con un delta (+1 o -1).
-     * La dejamos pública porque ya la estabas usando.
-     */
-    fun updateQty(productId: String, delta: Int) {
-        val current = _ui.value.items
-        val updated = current.mapNotNull { item ->
-            if (item.productId == productId) {
-                val newQty = (item.quantity + delta).coerceIn(1, 10)
-                item.copy(quantity = newQty)
-            } else {
-                item
+    private fun persistAll(items: List<CartItem>) {
+        val r = repo ?: return
+        viewModelScope.launch {
+            r.clear()
+            items.forEach { ci ->
+                r.add(ci.toEntity())
             }
         }
-        setItems(updated)
     }
 
-    // ------------------ interno ------------------
+    // mapeos
+    private fun CartEntity.toDomain() = CartItem(
+        productId = productId,
+        name = name,
+        image = image,
+        size = size,
+        flavor = flavor,
+        quantity = quantity,
+        unitPrice = unitPrice
+    )
 
-    private fun setItems(newItems: List<CartItem>) {
-        _ui.value = recalc(newItems)
-    }
-
-    private fun recalc(items: List<CartItem>): CartUiState {
-        val sub = items.sumOf { it.lineTotal }
-        val iva = (sub * 0.19).toInt()
-        val shipping = if (items.isEmpty()) 0 else 3900  // 👈 por ahora fijo
-        val discount = 0                                // luego metemos FELICES50, 50 años, etc.
-        val total = sub + iva + shipping - discount
-        return CartUiState(
-            items = items,
-            subtotal = sub,
-            iva = iva,
-            shipping = shipping,
-            discount = discount,
-            total = total
-        )
-    }
+    private fun CartItem.toEntity() = CartEntity(
+        productId = productId,
+        name = name,
+        image = image,
+        size = size,
+        flavor = flavor,
+        quantity = quantity,
+        unitPrice = unitPrice
+    )
 }
