@@ -47,7 +47,6 @@ fun ProductDetailScreen(
 ) {
     // VM con SavedStateHandle (Compose lo provee en esta destination)
     val vm: ProductDetailViewModel = viewModel()
-    val catalogVm: CatalogViewModel = viewModel()
     val ui by vm.ui.collectAsState()
     val ctx = LocalContext.current
 
@@ -61,7 +60,7 @@ fun ProductDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(p?.nombre ?: "Producto") },
+                title = { Text(ui.product?.nombre ?: "Producto") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -87,40 +86,45 @@ fun ProductDetailScreen(
                         animationSpec = tween(450, easing = FastOutLinearInEasing),
                         finishedListener = { vm.consumeShine() }
                     )
-                    Text(" ${ui.qty} ", style = MaterialTheme.typography.titleLarge, modifier = Modifier.alpha(1f))
+                    Text(" ${ui.qty} ",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.alpha(1f))
                     Box(
                         modifier = Modifier
                             .height(24.dp)
                             .width(24.dp)
                             .alpha(alpha)
-                            .background(Color.Yellow.copy(0.6f), shape = MaterialTheme.shapes.small)
+                            .background(
+                                Color.Yellow.copy(0.6f),
+                                shape = MaterialTheme.shapes.small)
                     )
                     OutlinedButton(onClick = { vm.incQty() }) { Text("+") }
 
                     Spacer(Modifier.weight(1f))
                     Button(
                         onClick = {
-                            val product = ui.product ?: return@Button
-                            val item = com.milsabores.appkotlin_guia.model.CartItem(
-                                productId = product.id,
-                                name = product.nombre,
-                                image = product.imagen,
-                                size = ui.selectedTamano,
-                                flavor = ui.selectedSabor,
-                                quantity = ui.qty,
-                                unitPrice = product.precio
-                            )
-                            navController.navigate(AppRoute.Cart.route)
+                            val item = vm.toCartItem()
+                            if (item != null) {
+                                cartVm.addOrIncrease(item)
+
+                            }
                         },
                         modifier = Modifier.height(48.dp)
-                    ) { Text("Agregar al carrito")
+                    ) {
+                        Text("Agregar al carrito")
                     }
                 }
             }
         }
     ) { pv ->
+        val p = ui.product
         if (p == null) {
-            Box(Modifier.fillMaxSize().padding(pv), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(pv),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator()
             }
             return@Scaffold
@@ -133,7 +137,7 @@ fun ProductDetailScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Imagen grande + zoom (tap para abrir modal zoom)
+            // Imagen grande
             val res = resIdFor(ctx, p.imagen)
             Box(
                 modifier = Modifier
@@ -157,28 +161,36 @@ fun ProductDetailScreen(
                 }
             }
 
-            // Título, rating, precio
+            // título + precio + rating fijo
             Text(p.nombre, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text("★★★★☆ (128 reseñas)")
             Text("$${p.precio}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
 
-            // Selector tamaño
+            // Tamaños
             Text("Tamaño", fontWeight = FontWeight.SemiBold)
             FlowRowWrap {
                 ui.tamanos.forEach { t ->
-                    FilterChip(selected = ui.selectedTamano == t, onClick = { vm.setTamano(t) }, label = { Text(t) })
+                    FilterChip(
+                        selected = ui.selectedTamano == t,
+                        onClick = { vm.setTamano(t) },
+                        label = { Text(t) }
+                    )
                 }
             }
 
-            // Selector sabor
+            // Sabores
             Text("Sabor", fontWeight = FontWeight.SemiBold)
             FlowRowWrap {
                 ui.sabores.forEach { s ->
-                    FilterChip(selected = ui.selectedSabor == s, onClick = { vm.setSabor(s) }, label = { Text(s) })
+                    FilterChip(
+                        selected = ui.selectedSabor == s,
+                        onClick = { vm.setSabor(s) },
+                        label = { Text(s) }
+                    )
                 }
             }
 
-            // Mensaje con contador (≤ 30)
+            // Mensaje
             OutlinedTextField(
                 value = ui.mensaje,
                 onValueChange = vm::setMensaje,
@@ -187,27 +199,36 @@ fun ProductDetailScreen(
                 supportingText = { Text("${ui.mensajeCount}/30") },
                 isError = ui.mensajeError != null
             )
-            ui.mensajeError?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (ui.mensajeError != null) {
+                Text(
+                    ui.mensajeError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
-            // Similares
-            Text("Productos similares", style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold)
+            // similares
+            Text(
+                "Productos similares",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
                 items(vm.similar()) { sp: Product ->
                     Box(Modifier.width(180.dp)) {
-                        ProductCard(product = sp, onOpen = { /* nav a product/{id} */ })
+                        ProductCard(product = sp, onOpen = {
+                            navController.navigate(AppRoute.Product.build(sp.id))
+                        })
                     }
                 }
             }
         }
     }
 
-    // Modal de ZOOM - CORREGIDO
+    // Modal de ZOOM
     if (ui.showZoom) {
         val currentProduct = ui.product
         if (currentProduct != null) {
@@ -259,7 +280,9 @@ private fun FullscreenZoomDialog(product: Product, onDismiss: () -> Unit) {
             }
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
             ) {
                 Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
             }
