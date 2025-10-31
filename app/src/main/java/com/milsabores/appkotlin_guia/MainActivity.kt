@@ -22,6 +22,7 @@ import com.milsabores.appkotlin_guia.model.EstadoDataStore
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.navigation.NavigationEvent
 import com.milsabores.appkotlin_guia.ui.screens.CartScreen
+import com.milsabores.appkotlin_guia.ui.screens.CheckoutScreen
 import com.milsabores.appkotlin_guia.ui.screens.EntryScreen
 import com.milsabores.appkotlin_guia.ui.screens.HomeScreen
 import com.milsabores.appkotlin_guia.ui.screens.OnboardingScreen
@@ -48,6 +49,13 @@ class MainActivity : ComponentActivity() {
 
         // DataStore fuera del compose
         val prefs = EstadoDataStore(applicationContext)
+        val db = androidx.room.Room.databaseBuilder(
+            applicationContext,
+            com.milsabores.appkotlin_guia.repository.AppDataBase::class.java,
+            "milsabores-db"
+        ).fallbackToDestructiveMigration().build()
+        val cartRepo = com.milsabores.appkotlin_guia.repository.CartRepository(db.cartDao())
+
 
         setContent {
             AppKotlin_GuiaTheme {
@@ -55,7 +63,11 @@ class MainActivity : ComponentActivity() {
                 val mainVm: MainViewModel = viewModel()
                 val usuarioVm: UsuarioViewModel = viewModel()
                 val estadoVm: EstadoViewModel = viewModel()
-                val cartVm: CartViewModel = viewModel()
+                val cartVm: CartViewModel = viewModel(
+                    factory = androidx.lifecycle.viewmodel.initializer{
+                        CartViewModel(cartRepo)
+                    }
+                )
                 val catalogVm: CatalogViewModel = viewModel()
 
                 val navController = rememberNavController()
@@ -68,6 +80,7 @@ class MainActivity : ComponentActivity() {
                 // carrito global (para badge, si lo quieres en algún layout root)
                 val cartUi by cartVm.ui.collectAsState()
                 val cartCount = cartUi.items.sumOf { it.quantity }  // <- ahora sí existe
+
 
                 // Navegación desde el VM
                 LaunchedEffect(Unit) {
@@ -197,6 +210,14 @@ class MainActivity : ComponentActivity() {
                                 onLoginRequested = { navController.navigate(AppRoute.Register.route) }
                             )
                         }
+
+                        composable(AppRoute.Checkout.route) {
+                            CheckoutScreen(
+                                navController = navController,
+                                cartVm = cartVm
+                            )
+                        }
+
 
                         // Detalle de producto product/{id}
                         composable(
