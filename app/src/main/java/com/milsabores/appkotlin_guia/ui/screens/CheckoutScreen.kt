@@ -27,6 +27,11 @@ fun CheckoutScreen(
     var payment by remember { mutableStateOf("transferencia") }
     var coupon by remember { mutableStateOf("") }
 
+    // errores
+    val addressError = address.isBlank()
+    val dateError = date.isBlank()
+    val timeError = time.isBlank()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,8 +54,15 @@ fun CheckoutScreen(
                 onValueChange = { address = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Dirección (obligatoria)") },
-                isError = address.isBlank()
+                isError = addressError
             )
+            if (addressError) {
+                Text(
+                    "Ingresa una dirección válida",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             // 2. Fecha y hora
             Text("2. Fecha y hora de entrega", fontWeight = FontWeight.SemiBold)
@@ -62,13 +74,22 @@ fun CheckoutScreen(
                     value = date,
                     onValueChange = { date = it },
                     modifier = Modifier.weight(1f),
-                    label = { Text("Fecha (dd-mm)") }
+                    label = { Text("Fecha (dd-mm)") },
+                    isError = dateError
                 )
                 OutlinedTextField(
                     value = time,
                     onValueChange = { time = it },
                     modifier = Modifier.weight(1f),
-                    label = { Text("Hora (ej. 15:30)") }
+                    label = { Text("Hora (ej. 15:30)") },
+                    isError = timeError
+                )
+            }
+            if (dateError || timeError) {
+                Text(
+                    "Indica fecha y hora para la entrega",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
@@ -144,12 +165,10 @@ fun CheckoutScreen(
 
             Button(
                 onClick = {
-                    // validaciones mínimas
-                    if (address.isBlank()) return@Button
-                    // aquí iría guardado en Room/Backend
+                    // aquí iría el guardado
                     navController.navigateUp()
                 },
-                enabled = address.isNotBlank() && ui.items.isNotEmpty(),
+                enabled = !addressError && !dateError && !timeError && ui.items.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Confirmar compra")
