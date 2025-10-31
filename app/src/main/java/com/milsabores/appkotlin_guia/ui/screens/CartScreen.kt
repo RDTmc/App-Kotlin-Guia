@@ -103,7 +103,7 @@ fun CartScreen(
                         showAuthDialog = true
                     } else {
                         // aquí luego va el Checkout real
-                        navController.navigate(AppRoute.Resumen.route)
+                        navController.navigate(AppRoute.Checkout.route)
                     }
                 },
                 modifier = Modifier
