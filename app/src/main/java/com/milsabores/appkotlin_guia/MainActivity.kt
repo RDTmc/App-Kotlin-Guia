@@ -55,7 +55,10 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             com.milsabores.appkotlin_guia.repository.AppDataBase::class.java,
             "milsabores-db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .fallbackToDestructiveMigration()   // 👈 BORRA y crea de nuevo si cambia versión
+            .build()
+
         val cartRepo = com.milsabores.appkotlin_guia.repository.CartRepository(db.cartDao())
         val orderRepo = com.milsabores.appkotlin_guia.repository.OrderRepository(db.orderDao())
 
@@ -170,15 +173,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onLoginClick = {
-                                    navController.navigate(AppRoute.Register.route)
+                                    navController.navigate(AppRoute.Login.route)
                                 },
-                                onResetOnboardingClick = {
-                                    scope.launch { prefs.resetOnboarding() }
-                                    navController.navigate(AppRoute.Onboarding.route) {
-                                        popUpTo(AppRoute.Entry.route) { inclusive = true }
-                                    }
+                                onRegisterClick = {
+                                    navController.navigate(AppRoute.Register.route)
                                 }
                             )
+
                         }
 
                         // 4. Home
