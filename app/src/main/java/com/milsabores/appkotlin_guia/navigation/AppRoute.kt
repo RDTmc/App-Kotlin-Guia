@@ -5,6 +5,7 @@ sealed class AppRoute(val route:String) {
     data object Splash     : AppRoute("splash")
     data object Onboarding : AppRoute("onboarding")
     data object Entry      : AppRoute("entry")
+    data object Login : AppRoute("login")
     data object Home:AppRoute("home")
     data object Register: AppRoute("register")
     data object Profile: AppRoute("profile")
@@ -16,6 +17,10 @@ sealed class AppRoute(val route:String) {
 
     data object Cart : AppRoute("cart")
     data object Checkout   : AppRoute("checkout")
+
+
+
+
 
 
     data class Detail(val itemId: String) : AppRoute("detail/{itemId}") {
