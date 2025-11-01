@@ -1,94 +1,97 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.milsabores.appkotlin_guia.R
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class OnbSlide(
+    val title: String,
+    val subtitle: String,
+    val imageRes: Int
+)
+
 @Composable
 fun OnboardingScreen(
-    onSkipClick: () -> Unit,
-    onFinishClick: () -> Unit
+    onFinishClick: () -> Unit,
+    onSkipClick: () -> Unit
 ) {
-    var pageIndex by remember { mutableStateOf(0) }
-    val slides: List<String> = listOf(
-        "Descubre nuestras tortas del día",
-        "Según la ocasión perfecta",
-        "Personaliza sabor y tamaño"
+    val slides = listOf(
+        OnbSlide("Descubre nuestras tortas del día", "Frescura y sabor diario", R.drawable.onb_1),
+        OnbSlide("Según la ocasión perfecta", "Cumpleaños, bodas, eventos", R.drawable.onb_2),
+        OnbSlide("Conoce nuestros productos", "Tradicional, sin azúcar y vegano", R.drawable.onb_3),
     )
+    val pagerState = rememberPagerState(pageCount = { slides.size })
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("¡Bienvenido!") },
-                actions = {
-                    // Llamar a la lambda dentro del onClick
-                    TextButton(onClick = { onSkipClick() }) { Text("Saltar") }
-                }
-            )
-        }
-    ) { pv ->
-        Column(
-            modifier = Modifier
-                .padding(pv)
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            val s = slides[page]
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = slides[pageIndex],
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineSmall
+                Spacer(Modifier.height(8.dp))
+                Image(
+                    painter = painterResource(id = s.imageRes),
+                    contentDescription = s.title,
+                    modifier = Modifier
+                        .size(260.dp)
                 )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    enabled = pageIndex > 0,
-                    onClick = { pageIndex = (pageIndex - 1).coerceAtLeast(0) }
-                ) { Text("Atrás") }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeat(slides.size) { idx ->
-                        val selected = idx == pageIndex
-                        Box(
-                            Modifier
-                                .size(if (selected) 10.dp else 8.dp)
-                                .background(
-                                    color = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outline,
-                                    shape = MaterialTheme.shapes.extraSmall
-                                )
-                        )
-                    }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(s.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    Text(s.subtitle, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
                 }
-
                 Button(
                     onClick = {
-                        if (pageIndex < slides.lastIndex) {
-                            pageIndex += 1
+                        if (page < slides.lastIndex) {
+                            scope.launch { pagerState.animateScrollToPage(page + 1) }
                         } else {
-                            // Invocar explícitamente
                             onFinishClick()
                         }
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                 ) {
-                    Text(if (pageIndex < slides.lastIndex) "Siguiente" else "Comenzar")
+                    Text("¡Ver!")
+                }
+                OutlinedButton(
+                    onClick = onSkipClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Saltar")
                 }
             }
         }
