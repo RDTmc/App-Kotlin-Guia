@@ -7,55 +7,62 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntryScreen(
     onGuestClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onResetOnboardingClick: (() -> Unit)
+    onRegisterClick: () -> Unit
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("¡Empecemos!") }) }) { pv ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "Explora como invitado o inicia sesión para comprar más rápido.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(28.dp))
+
+        Button(
+            onClick = onGuestClick,
             modifier = Modifier
-                .padding(pv)
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .height(52.dp),
         ) {
-            Text(
-                "Explora como invitado o inicia sesión para comprar más rápido.",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.height(24.dp))
+            Text("Entrar como invitado", fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.height(14.dp))
 
-            // Importante: llamar a la lambda dentro del onClick
-            Button(onClick = { onGuestClick() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Entrar como Invitado")
-            }
+        Button(
+            onClick = onLoginClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+        ) {
+            Text("Iniciar sesión / Registrarme", fontWeight = FontWeight.SemiBold)
+        }
 
-            Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
-            OutlinedButton(onClick = { onLoginClick() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Iniciar sesión / Registrarme")
-            }
-
-            if (onResetOnboardingClick != null) {
-                Spacer(Modifier.height(24.dp))
-                TextButton(onClick = { onResetOnboardingClick() }) {
-                    Text("Reiniciar Onboarding (debug)")
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-            Text(
-                "Como invitado podrás explorar el catálogo. Se solicitará tu login al comprar.",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall
-            )
+        OutlinedButton(
+            onClick = onRegisterClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Text("Crear cuenta")
         }
     }
 }
