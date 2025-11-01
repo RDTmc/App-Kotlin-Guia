@@ -2,10 +2,13 @@ package com.milsabores.appkotlin_guia.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Paleta marca
+val CremaPastel = Color(0xFFFFF5E1)
+val RosaSuave   = Color(0xFFFF69B4)   // + vivo
+val RosaClaro   = Color(0xFFFFC0CB)   // + suave
+val Chocolate   = Color(0xFF573123)   // principal
+val Celeste     = Color(0xFF86DBDE)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Texto
+val TextoPrincipal  = Color(0xFF5D4037)
+val TextoSecundario = Color(0xFFB0BEC5)
