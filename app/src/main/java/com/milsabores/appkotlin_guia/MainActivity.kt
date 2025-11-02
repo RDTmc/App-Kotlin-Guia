@@ -41,6 +41,8 @@ import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.milsabores.appkotlin_guia.ui.screens.CheckoutSuccessScreen
+import com.milsabores.appkotlin_guia.ui.screens.LoginScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -124,7 +126,7 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         // si ya vio onboarding, lo mandamos a Entry; si no, a Splash
-                        startDestination = if (onboardingDone) AppRoute.Entry.route else AppRoute.Splash.route,
+                        startDestination = AppRoute.Splash.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
 
@@ -132,18 +134,13 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Splash.route) {
                             SplashScreen(
                                 onFinish = {
-                                    if (onboardingDone) {
-                                        navController.navigate(AppRoute.Entry.route) {
-                                            popUpTo(AppRoute.Splash.route) { inclusive = true }
-                                        }
-                                    } else {
-                                        navController.navigate(AppRoute.Onboarding.route) {
-                                            popUpTo(AppRoute.Splash.route) { inclusive = true }
-                                        }
+                                    navController.navigate(AppRoute.Onboarding.route) {
+                                        popUpTo(AppRoute.Splash.route) { inclusive = true }
                                     }
                                 }
                             )
                         }
+
 
                         // 2. Onboarding
                         composable(AppRoute.Onboarding.route) {
@@ -182,7 +179,15 @@ class MainActivity : ComponentActivity() {
 
                         }
 
-                        // 4. Home
+                        // 4) LOGIN
+                        composable(AppRoute.Login.route) {
+                            LoginScreen(
+                                navController = navController,
+                                usuarioVm = usuarioVm   // el que creaste antes
+                            )
+                        }
+
+                        // 5. Home
                         composable(AppRoute.Home.route) {
                             HomeScreen(
                                 viewModel = mainVm,
@@ -218,9 +223,7 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Cart.route) {
                             CartScreen(
                                 navController = navController,
-                                vm = cartVm,
-                                isGuest = guestMode,
-                                onLoginRequested = { navController.navigate(AppRoute.Register.route) }
+                                vm = cartVm
                             )
                         }
 
@@ -230,6 +233,11 @@ class MainActivity : ComponentActivity() {
                                 cartVm = cartVm
                             )
                         }
+
+                        composable(AppRoute.CheckoutSuccess.route) {
+                            CheckoutSuccessScreen(navController)
+                        }
+
 
 
                         // Detalle de producto product/{id}
