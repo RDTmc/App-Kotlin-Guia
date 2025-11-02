@@ -22,7 +22,7 @@ data class CartUiState(
 )
 
 class CartViewModel(
-    private val repo: CartRepository? = null,   // 👈 null en MVP, la inyectamos en MainActivity
+    private val repo: CartRepository? = null,   // null en MVP, la inyectamos en MainActivity
             private val orderRepo: OrderRepository? = null
 ) : ViewModel() {
 
@@ -34,7 +34,9 @@ class CartViewModel(
         repo?.observeCart()
             ?.onEach { entities ->
                 val items = entities.map { it.toDomain() }
-                _ui.value = recalc(items)
+                if (!sameItemList(items, _ui.value.items)) {
+                    _ui.value = recalc(items)
+                }
             }
             ?.launchIn(viewModelScope)
     }
@@ -67,8 +69,6 @@ class CartViewModel(
                 item.copy(quantity = newQty)
             } else item
         }
-        setItems(updated)
-        // guardar en Room
         persistAll(updated)
     }
 
@@ -77,12 +77,11 @@ class CartViewModel(
 
     fun remove(productId: String) {
         val filtered = _ui.value.items.filterNot { it.productId == productId }
-        setItems(filtered)
         persistAll(filtered)
     }
 
     fun clear() {
-        setItems(emptyList())
+        persistAll(emptyList())
         viewModelScope.launch {
             repo?.clear()
         }
@@ -102,21 +101,40 @@ class CartViewModel(
         } else {
             current += item
         }
-        setItems(current)
         persistAll(current)
     }
 
     private fun persistAll(items: List<CartItem>) {
-        val r = repo ?: return
+        val r = repo ?: run {
+            // sin repo, actualizamos UI localmente
+            setItems(items)
+            return
+        }
+
         viewModelScope.launch {
-            r.clear()
-            items.forEach { ci ->
-                r.add(ci.toEntity())
+            try {
+                // si el repo tuviera una API replaceAll sería mejor.
+                // Ejecutamos clear() seguido de inserts secuenciales, pero esperamos a que termine todo.
+                r.clear()
+                items.forEach { ci ->
+                    r.add(ci.toEntity())
+                }
+                // Sólo después de que la persistencia terminó, actualizamos UI local (optimista controlado)
+                // Nota: si Room emite la misma lista desde observeCart, el observer se encargará de la actualización.
+                // Aquí hacemos la actualización local para tener respuesta inmediata en caso de que el repo no emita.
+                val emitted = r.observeCart()?.let { flow ->
+                    // no bloqueante: preferimos actualizar local; la fuente de verdad seguirá siendo Room
+                    null
+                }
+                // Actualizar UI local para reflejar el estado final de la operación (reduce flicker al evitar emitir antes)
+                setItems(items)
+            } catch (e: Exception) {
+                // Si hay error en persistencia, podríamos notificar al UI (no implementado aquí)
             }
         }
     }
 
-    // 👇 NUEVO: finalizar compra
+    // Finalizar compra
     fun placeOrder(
         address: String,
         date: String?,
@@ -144,7 +162,7 @@ class CartViewModel(
                 )
             )
             // 2. limpiar carrito
-            cartRepo ?.clear()
+            repo ?.clear()
             _ui.value = CartUiState() // limpiar UI
         }
     }
@@ -169,4 +187,23 @@ class CartViewModel(
         quantity = quantity,
         unitPrice = unitPrice
     )
+
+    /**
+     * Compara dos listas de CartItem por su contenido relevante (id, size, flavor, quantity).
+     * Evita asignar _ui.value cuando no hay cambios reales.
+     */
+    private fun sameItemList(a: List<CartItem>, b: List<CartItem>): Boolean {
+        if (a.size != b.size) return false
+        for (i in a.indices) {
+            val ai = a[i]
+            val bi = b[i]
+            if (ai.productId != bi.productId) return false
+            if (ai.size != bi.size) return false
+            if (ai.flavor != bi.flavor) return false
+            if (ai.quantity != bi.quantity) return false
+            if (ai.unitPrice != bi.unitPrice) return false
+            // no comparamos name/image por ahora; si cambian con frecuencia pueden provocar recomposiciones
+        }
+        return true
+    }
 }

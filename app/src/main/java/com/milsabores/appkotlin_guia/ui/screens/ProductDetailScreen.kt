@@ -1,5 +1,6 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.milsabores.appkotlin_guia.model.CartItem
 import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
@@ -36,6 +39,7 @@ import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
 import com.milsabores.appkotlin_guia.viewmodel.ProductDetailViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,17 +49,18 @@ fun ProductDetailScreen(
     cartVm: CartViewModel,
     catalogVm: CatalogViewModel
 ) {
-    // VM con SavedStateHandle (Compose lo provee en esta destination)
+    // Compose provee en esta destination
     val vm: ProductDetailViewModel = viewModel()
     val ui by vm.ui.collectAsState()
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    // Cargar una sola vez cuando recibimos el id
+    // cargar el producto al entrar
     LaunchedEffect(productId) {
         vm.load(productId, catalogVm)
     }
 
-    val p = ui.product
+    var addedMsg by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -69,47 +74,63 @@ fun ProductDetailScreen(
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = Color(0xFFFFF5E1)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Contador
                     OutlinedButton(onClick = { vm.decQty() }) { Text("−") }
-                    // Micro-animación "brillo"
-                    val target = if (ui.showShine) 1f else 0f
+
                     val alpha by animateFloatAsState(
-                        targetValue = target,
-                        animationSpec = tween(450, easing = FastOutLinearInEasing),
+                        targetValue = if (ui.showShine) 1f else 0f,
+                        animationSpec = tween(350, easing = FastOutLinearInEasing),
                         finishedListener = { vm.consumeShine() }
                     )
-                    Text(" ${ui.qty} ",
+
+                    Text(
+                        " ${ui.qty} ",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.alpha(1f))
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
                     Box(
                         modifier = Modifier
-                            .height(24.dp)
-                            .width(24.dp)
+                            .size(20.dp)
                             .alpha(alpha)
-                            .background(
-                                Color.Yellow.copy(0.6f),
-                                shape = MaterialTheme.shapes.small)
+                            .background(Color(0xFFFFC0CB), shape = MaterialTheme.shapes.small)
                     )
                     OutlinedButton(onClick = { vm.incQty() }) { Text("+") }
 
                     Spacer(Modifier.weight(1f))
                     Button(
                         onClick = {
-                            val item = vm.toCartItem()
-                            if (item != null) {
-                                cartVm.addOrIncrease(item)
-
+                            val p = ui.product ?: return@Button
+                            val unit = calcPriceWithSize(p.precio, ui.selectedTamano)
+                            cartVm.addOrIncrease(
+                                CartItem(
+                                    productId = p.id,
+                                    name = p.nombre,
+                                    image = p.imagen,
+                                    size = ui.selectedTamano,
+                                    flavor = null,
+                                    quantity = ui.qty,
+                                    unitPrice = unit
+                                )
+                            )
+                            addedMsg = true
+                            scope.launch {
+                                // ocultar después
+                                kotlinx.coroutines.delay(1600)
+                                addedMsg = false
                             }
                         },
-                        modifier = Modifier.height(48.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF573123),
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier.height(46.dp)
                     ) {
                         Text("Agregar al carrito")
                     }
@@ -138,7 +159,7 @@ fun ProductDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Imagen grande
-            val res = resIdFor(ctx, p.imagen)
+            val res = resIdFor(ctx, p.imagen ?: "")
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,7 +173,6 @@ fun ProductDetailScreen(
                         contentDescription = p.nombre,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(4.dp)
                             .clickable { vm.setZoom(true) },
                         contentScale = ContentScale.Crop
                     )
@@ -161,131 +181,103 @@ fun ProductDetailScreen(
                 }
             }
 
-            // título + precio + rating fijo
-            Text(p.nombre, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("★★★★☆ (128 reseñas)")
-            Text("$${p.precio}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            // mensaje de agregado
+            AnimatedVisibility(
+                visible = addedMsg,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 8.dp)
+            ) {
+                Surface(
+                    color = Color(0xAA000000),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Check,
+                            contentDescription = null, tint = Color.White)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Agregado al carrito", color = Color.White)
+                    }
+                }
+            }
 
-            // Tamaños
-            Text("Tamaño", fontWeight = FontWeight.SemiBold)
-            FlowRowWrap {
+
+            // título + precio + rating fijo
+            Text(p.nombre, style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold)
+            Text("★★★★☆ (128 reseñas)")
+            // precio mostrado con recargo
+            val finalPrice = calcPriceWithSize(p.precio, ui.selectedTamano)
+            Text(
+                "$$finalPrice",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF573123)
+            )
+
+            // Tamaños (con recargo)
+            Text("Tamaño / porciones", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ui.tamanos.forEach { t ->
                     FilterChip(
                         selected = ui.selectedTamano == t,
                         onClick = { vm.setTamano(t) },
-                        label = { Text(t) }
+                        label = {
+                            Text(
+                                when (t) {
+                                    "10 porciones" -> "10 porciones"
+                                    "12 porciones" -> "12 porciones"
+                                    else -> t
+                                }
+                            )
+                        }
                     )
                 }
             }
 
-            // Sabores
-            Text("Sabor", fontWeight = FontWeight.SemiBold)
-            FlowRowWrap {
-                ui.sabores.forEach { s ->
-                    FilterChip(
-                        selected = ui.selectedSabor == s,
-                        onClick = { vm.setSabor(s) },
-                        label = { Text(s) }
-                    )
-                }
-            }
-
-            // Mensaje
-            OutlinedTextField(
-                value = ui.mensaje,
-                onValueChange = vm::setMensaje,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Mensaje en la torta (máx 30)") },
-                supportingText = { Text("${ui.mensajeCount}/30") },
-                isError = ui.mensajeError != null
-            )
-            if (ui.mensajeError != null) {
-                Text(
-                    ui.mensajeError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            // similares
-            Text(
-                "Productos similares",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
+            // ir al carrito
+            OutlinedButton(
+                onClick = { navController.navigate(AppRoute.Cart.route) },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                items(vm.similar()) { sp: Product ->
-                    Box(Modifier.width(180.dp)) {
-                        ProductCard(product = sp, onOpen = {
-                            navController.navigate(AppRoute.Product.build(sp.id))
-                        })
+                Text("Ir al carrito")
+            }
+        }
+
+        // modal zoom
+        if (ui.showZoom && ui.product != null) {
+            val zoomRes = resIdFor(ctx, ui.product!!.imagen ?: "")
+
+            AlertDialog(
+                onDismissRequest = { vm.setZoom(false) },
+                confirmButton = {},
+                text = {
+                    if (zoomRes != 0) {
+                        Image(
+                            painter = painterResource(zoomRes),
+                            contentDescription = ui.product!!.nombre,
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.Fit
+                        )
                     }
                 }
-            }
-        }
-    }
-
-    // Modal de ZOOM
-    if (ui.showZoom) {
-        val currentProduct = ui.product
-        if (currentProduct != null) {
-            FullscreenZoomDialog(
-                product = currentProduct,
-                onDismiss = { vm.setZoom(false) }
             )
         }
     }
 }
 
-@Composable
-private fun FlowRowWrap(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        content = content
-    )
-}
-
-@Composable
-private fun FullscreenZoomDialog(product: Product, onDismiss: () -> Unit) {
-    val ctx = LocalContext.current
-    val res = resIdFor(ctx, product.imagen)
-    var scale by remember { mutableFloatStateOf(1f) }
-    val state = remember {
-        TransformableState { zoomChange, _, _ ->
-            scale = (scale * zoomChange).coerceIn(1f, 3f)
-        }
+/**
+ * Calcula precio según tamaño:
+ * 8 porciones → base
+ * 10 porciones → +3.000
+ * 12 porciones → +5.000
+ */
+private fun calcPriceWithSize(base: Int, size: String?): Int =
+    when (size) {
+        "10 porciones" -> base + 3000
+        "12 porciones" -> base + 5000
+        else -> base
     }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-            contentAlignment = Alignment.Center
-        ) {
-            if (res != 0) {
-                Image(
-                    painter = painterResource(res),
-                    contentDescription = product.nombre,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .scale(scale)
-                        .transformable(state),
-                    contentScale = ContentScale.Fit
-                )
-            }
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
-            }
-        }
-    }
-}
