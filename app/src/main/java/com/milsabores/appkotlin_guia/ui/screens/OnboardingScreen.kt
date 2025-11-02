@@ -61,6 +61,7 @@ fun OnboardingScreen(
     val currentPage = pagerState.currentPage
     val scope = rememberCoroutineScope()
 
+
     Box(modifier = Modifier.fillMaxSize()) {
         // 1) HorizontalPager solo con las imágenes
         HorizontalPager(
@@ -88,7 +89,7 @@ fun OnboardingScreen(
                             Color(0x99000000),
                             Color(0xCC000000)
                         ),
-                        startY = 300f
+                        startY = 450f
                     )
                 )
         )
