@@ -74,69 +74,93 @@ fun ProductDetailScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(containerColor = Color(0xFFFFF5E1)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Contador
-                    OutlinedButton(onClick = { vm.decQty() }) { Text("−") }
+            val cartCount = cartVm.ui.collectAsState().value.items.sumOf { it.quantity }
 
-                    val alpha by animateFloatAsState(
-                        targetValue = if (ui.showShine) 1f else 0f,
-                        animationSpec = tween(350, easing = FastOutLinearInEasing),
-                        finishedListener = { vm.consumeShine() }
-                    )
-
-                    Text(
-                        " ${ui.qty} ",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    Box(
+            Column {
+                // 1) barra de acciones del producto (la tuya)
+                BottomAppBar(containerColor = Color(0xFFFFF5E1)) {
+                    Row(
                         modifier = Modifier
-                            .size(20.dp)
-                            .alpha(alpha)
-                            .background(Color(0xFFFFC0CB), shape = MaterialTheme.shapes.small)
-                    )
-                    OutlinedButton(onClick = { vm.incQty() }) { Text("+") }
-
-                    Spacer(Modifier.weight(1f))
-                    Button(
-                        onClick = {
-                            val p = ui.product ?: return@Button
-                            val unit = calcPriceWithSize(p.precio, ui.selectedTamano)
-                            cartVm.addOrIncrease(
-                                CartItem(
-                                    productId = p.id,
-                                    name = p.nombre,
-                                    image = p.imagen,
-                                    size = ui.selectedTamano,
-                                    flavor = null,
-                                    quantity = ui.qty,
-                                    unitPrice = unit
-                                )
-                            )
-                            addedMsg = true
-                            scope.launch {
-                                // ocultar después
-                                kotlinx.coroutines.delay(1600)
-                                addedMsg = false
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF573123),
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier.height(46.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Agregar al carrito")
+                        OutlinedButton(onClick = { vm.decQty() }) { Text("−") }
+
+                        val alpha by animateFloatAsState(
+                            targetValue = if (ui.showShine) 1f else 0f,
+                            animationSpec = tween(350, easing = FastOutLinearInEasing),
+                            finishedListener = { vm.consumeShine() }
+                        )
+
+                        Text(
+                            " ${ui.qty} ",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .alpha(alpha)
+                                .background(Color(0xFFFFC0CB), shape = MaterialTheme.shapes.small)
+                        )
+
+                        OutlinedButton(onClick = { vm.incQty() }) { Text("+") }
+
+                        Spacer(Modifier.weight(1f))
+                        Button(
+                            onClick = {
+                                val p = ui.product ?: return@Button
+                                val unit = calcPriceWithSize(p.precio, ui.selectedTamano)
+                                cartVm.addOrIncrease(
+                                    CartItem(
+                                        productId = p.id,
+                                        name = p.nombre,
+                                        image = p.imagen,
+                                        size = ui.selectedTamano,
+                                        flavor = null,
+                                        quantity = ui.qty,
+                                        unitPrice = unit
+                                    )
+                                )
+                                addedMsg = true
+                                scope.launch {
+                                    kotlinx.coroutines.delay(1600)
+                                    addedMsg = false
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF573123),
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier.height(46.dp)
+                        ) {
+                            Text("Agregar al carrito")
+                        }
                     }
                 }
+
+                // 2) bottom nav reutilizada (la misma que en Home)
+                com.milsabores.appkotlin_guia.ui.components.BottomNavBar(
+                    current = com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME,
+                    cartCount = cartCount,
+                    onSelect = { dest ->
+                        when (dest) {
+                            com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME ->
+                                navController.navigate(AppRoute.Home.route)
+                            com.milsabores.appkotlin_guia.ui.components.BottomDest.MENU ->
+                                navController.navigate(AppRoute.Resumen.route)
+                            com.milsabores.appkotlin_guia.ui.components.BottomDest.CART ->
+                                navController.navigate(AppRoute.Cart.route)
+                            com.milsabores.appkotlin_guia.ui.components.BottomDest.PROFILE ->
+                                navController.navigate(AppRoute.Profile.route)
+                        }
+                    }
+                )
             }
         }
+
     ) { pv ->
         val p = ui.product
         if (p == null) {

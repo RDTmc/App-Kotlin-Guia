@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -27,7 +26,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun CheckoutScreen(
     navController: NavController,
-    cartVm: CartViewModel
+    cartVm: CartViewModel,
+    isGuest: Boolean = false
 ) {
     val ui by cartVm.ui.collectAsState()
 
@@ -47,11 +47,20 @@ fun CheckoutScreen(
     var metodo by remember { mutableStateOf("Efectivo") }
     var error by remember { mutableStateOf<String?>(null) }
 
+    // NUEVO: modal para invitados
+    var showLoginModal by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Pago") }) },
         bottomBar = {
             Button(
                 onClick = {
+                    // si es invitado, primero login
+                    if (isGuest) {
+                        showLoginModal = true
+                        return@Button
+                    }
+
                     if (nombre.isBlank() || direccion.isBlank() || fechaTexto.isBlank() || hora.isBlank()) {
                         error = "Completa todos los campos."
                         return@Button
@@ -84,9 +93,8 @@ fun CheckoutScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp)
         ) {
-            item {
-                Text("Datos de entrega", style = MaterialTheme.typography.titleMedium)
-            }
+            item { Text("Datos de entrega", style = MaterialTheme.typography.titleMedium) }
+
             item {
                 OutlinedTextField(
                     value = nombre,
@@ -105,18 +113,18 @@ fun CheckoutScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             // fila fecha + hora
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // fecha (con overlay clickeable)
+                    // fecha
                     Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
                             value = fechaTexto,
                             onValueChange = {},
                             label = { Text("Fecha") },
                             readOnly = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Box(
                             modifier = Modifier
@@ -158,9 +166,8 @@ fun CheckoutScreen(
                     }
                 }
             }
-            item {
-                Text("Método de pago", style = MaterialTheme.typography.titleMedium)
-            }
+
+            item { Text("Método de pago", style = MaterialTheme.typography.titleMedium) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     PaymentRadio("Efectivo", metodo) { metodo = it }
@@ -168,18 +175,16 @@ fun CheckoutScreen(
                     PaymentRadio("Tarjeta / Webpay", metodo) { metodo = it }
                 }
             }
-            item {
-                SummaryCheckout(ui)
-            }
+
+            item { SummaryCheckout(ui) }
+
             if (error != null) {
-                item {
-                    Text(error!!, color = MaterialTheme.colorScheme.error)
-                }
+                item { Text(error!!, color = MaterialTheme.colorScheme.error) }
             }
         }
     }
 
-    // diálogo de fecha
+    // datepicker
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -193,18 +198,39 @@ fun CheckoutScreen(
                         fechaTexto = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
                     }
                     showDatePicker = false
-                }) {
-                    Text("OK")
-                }
+                }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
             }
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    // modal login / registro
+    if (showLoginModal) {
+        AlertDialog(
+            onDismissRequest = { showLoginModal = false },
+            title = { Text("Inicia sesión") },
+            text = { Text("Para finalizar tu compra debes iniciar sesión o crear tu cuenta.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLoginModal = false
+                    navController.navigate(AppRoute.Login.route)
+                }) {
+                    Text("Iniciar sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showLoginModal = false
+                    navController.navigate(AppRoute.Register.route)
+                }) {
+                    Text("Registrarme")
+                }
+            }
+        )
     }
 }
 
