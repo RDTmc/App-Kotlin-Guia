@@ -74,7 +74,9 @@ fun LoginScreen(
                         if (ok) {
                             scope.launch {
                                 prefs.setGuestMode(false)
+                                prefs.setLoggedIn(true)
                             }
+
                             navController.navigate(AppRoute.Home.route) {
                                 popUpTo(AppRoute.Entry.route) { inclusive = true }
                             }
