@@ -24,6 +24,7 @@ import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartUiState
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,61 +35,35 @@ fun CartScreen(
     onLoginRequested: () -> Unit
 ) {
     val ui by vm.ui.collectAsState()
-    var showGuestDialog by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    // Snackbar host para informar al invitado
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Carrito") })
         },
-        bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Column(Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Total", fontWeight = FontWeight.Bold)
-                        Text(formatCLP(ui.total), fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            if (isGuest) {
-                                showGuestDialog = true
-                            } else {
-                                navController.navigate(AppRoute.Checkout.route)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF573123),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Continuar compra")
-                    }
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { pv ->
-        Box(Modifier
-            .padding(pv)
-            .fillMaxSize()) {
+        Box(
+            Modifier
+                .padding(pv)
+                .fillMaxSize()
+        ) {
             if (ui.items.isEmpty()) {
-                Box(Modifier
+                Box(
+                    Modifier
                         .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Tu carrito está vacío")
                 }
-            }else {
+            } else {
                 Column(
-                    Modifier
-                        .fillMaxSize()
+                    Modifier.fillMaxSize()
                 ) {
                     LazyColumn(
                         state = listState,
@@ -102,7 +77,7 @@ fun CartScreen(
                             items = ui.items,
                             key = { it.productId to (it.size ?: "") }
                         ) { item ->
-                            // recordar la imagen para que no se resuelva en cada click
+                            // recordar la imagen por su nombre
                             val imgRes = remember(item.image) {
                                 resIdFor(ctx, item.image ?: "")
                             }
@@ -124,34 +99,31 @@ fun CartScreen(
                         }
                     }
 
-                    SummarySection(ui = ui) {
-                        navController.navigate(AppRoute.Checkout.route)
-                    }
+                    // SummarySection: botón único, activo si hay ítems
+                    SummarySection(
+                        ui = ui,
+                        onContinue = {
+                            // Si es invitado, mostramos Snackbar con acción para iniciar sesión
+                            if (isGuest) {
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "Debes iniciar sesión para completar la compra.",
+                                        actionLabel = "Iniciar sesión",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        onLoginRequested()
+                                    }
+                                }
+                            } else {
+                                // Usuario autenticado: navegar al checkout
+                                navController.navigate(AppRoute.Checkout.route)
+                            }
+                        }
+                    )
                 }
             }
         }
-    }
-
-
-    if (showGuestDialog) {
-        AlertDialog(
-            onDismissRequest = { showGuestDialog = false },
-            title = { Text("Inicia sesión para continuar") },
-            text = { Text("Para finalizar tu compra necesitas iniciar sesión o crear una cuenta.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showGuestDialog = false
-                    onLoginRequested()
-                }) {
-                    Text("Ir a login")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showGuestDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
     }
 }
 
@@ -226,8 +198,15 @@ private fun CartItemRow(
     }
 }
 
+/**
+ * SummarySection compacta: mantiene el botón "Continuar compra" y muestra total.
+ * onContinue: acción única que decide comportamiento según contexto (guest o auth).
+ */
 @Composable
-private fun SummarySection(ui: CartUiState, onCheckout: () -> Unit) {
+private fun SummarySection(
+    ui: CartUiState,
+    onContinue: () -> Unit
+) {
     Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier
@@ -251,7 +230,7 @@ private fun SummarySection(ui: CartUiState, onCheckout: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Button(
-                onClick = onCheckout,
+                onClick = onContinue,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF573123),
