@@ -224,7 +224,11 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Cart.route) {
                             CartScreen(
                                 navController = navController,
-                                vm = cartVm
+                                vm = cartVm,
+                                isGuest = guestMode,
+                                onLoginRequested = {
+                                    navController.navigate(AppRoute.Login.route)
+                                }
                             )
                         }
 
