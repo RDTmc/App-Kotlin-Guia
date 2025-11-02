@@ -60,8 +60,6 @@ fun HomeScreen(
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Catalogo
-    val catalogVm: CatalogViewModel = viewModel()
     val featured by catalogVm.featured.collectAsState()
     val filter by catalogVm.filter.collectAsState()
     val products by catalogVm.products.collectAsState()
@@ -69,7 +67,6 @@ fun HomeScreen(
     val cartCount = cartUi.items.sumOf { it.quantity }
 
     var bottomSel by remember { mutableStateOf(BottomDest.HOME) }
-
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -87,9 +84,8 @@ fun HomeScreen(
 
             }
         }
-    )
-    {
-        Scaffold(
+    )   {
+          Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("Pantalla Home") },
@@ -117,12 +113,15 @@ fun HomeScreen(
                     }
                 )
             }
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
+          ) { innerPadding ->
+              Column(
+                  modifier = Modifier
+                      .padding(
+                          top = innerPadding.calculateTopPadding(),
+                          bottom = 0.dp  // ← Elimina el padding bottom automático
+                      )
+                      .fillMaxSize()
+              ) {
                 // Carrusel
                 TopCarrusel(
                     items = featured.take(3),
@@ -141,7 +140,10 @@ fun HomeScreen(
                 // Grilla
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,end = 20.dp,
+                        top = 20.dp,bottom = 85.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
