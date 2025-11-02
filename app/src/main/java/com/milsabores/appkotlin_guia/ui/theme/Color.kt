@@ -3,7 +3,7 @@ package com.milsabores.appkotlin_guia.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Paleta marca
-val CremaPastel = Color(0xFFFFF5E1)
+val BlancoMarfil = Color(0xFFFAFAFA)
 val RosaSuave   = Color(0xFFFF69B4)   // + vivo
 val RosaClaro   = Color(0xFFFFC0CB)   // + suave
 val Chocolate   = Color(0xFF573123)   // principal
