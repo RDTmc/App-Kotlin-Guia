@@ -13,34 +13,36 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.milsabores.appkotlin_guia.model.EstadoDataStore
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavController,
-    usuarioVm: UsuarioViewModel
+    usuarioVm: UsuarioViewModel,
+    prefs: EstadoDataStore
 ) {
     var email by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
-    var showPass by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
 
-    Scaffold { pv ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Inicia sesión") }) },
+        snackbarHost = { SnackbarHost(snackbar) }
+    ) { pv ->
         Column(
             modifier = Modifier
                 .padding(pv)
                 .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center,
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Inicia sesión en tu cuenta",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(24.dp))
-
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -48,56 +50,57 @@ fun LoginScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(Modifier.height(12.dp))
-
             OutlinedTextField(
                 value = pass,
                 onValueChange = { pass = it },
-                label = { Text("Password") },
+                label = { Text("Contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
-                visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { showPass = !showPass }) {
-                        Icon(
-                            imageVector = if (showPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
-                    }
-                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             if (error != null) {
-                Spacer(Modifier.height(8.dp))
                 Text(error!!, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(Modifier.height(20.dp))
             Button(
                 onClick = {
+                    if (email.isBlank() || pass.isBlank()) {
+                        error = "Completa tus credenciales"
+                        return@Button
+                    }
+                    // login real usando tu VM
                     usuarioVm.login(email, pass) { ok ->
                         if (ok) {
+                            scope.launch {
+                                prefs.setGuestMode(false)
+                            }
                             navController.navigate(AppRoute.Home.route) {
-                                popUpTo(AppRoute.Login.route) { inclusive = true }
+                                popUpTo(AppRoute.Entry.route) { inclusive = true }
                             }
                         } else {
                             error = "Credenciales inválidas"
+                            scope.launch {
+                                snackbar.showSnackbar("Usuario o contraseña incorrectos")
+                            }
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color(0xFF573123),
+                    contentColor = androidx.compose.ui.graphics.Color.White
+                )
             ) {
                 Text("Ingresar")
             }
 
-            Spacer(Modifier.height(14.dp))
-            TextButton(onClick = { navController.navigate(AppRoute.Register.route) }) {
-                Text("¿No estás registrado? Regístrate aquí")
+            TextButton(
+                onClick = { navController.navigate(AppRoute.Register.route) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("¿No tienes cuenta? Regístrate")
             }
         }
     }
 }
-

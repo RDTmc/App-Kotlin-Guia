@@ -183,7 +183,8 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Login.route) {
                             LoginScreen(
                                 navController = navController,
-                                usuarioVm = usuarioVm   // el que creaste antes
+                                usuarioVm = usuarioVm,
+                                prefs = prefs
                             )
                         }
 
