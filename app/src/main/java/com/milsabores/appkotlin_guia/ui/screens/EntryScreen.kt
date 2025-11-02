@@ -51,7 +51,7 @@ fun EntryScreen(
                 .fillMaxWidth()
                 .height(52.dp),
         ) {
-            Text("Iniciar sesión / Registrarme", fontWeight = FontWeight.SemiBold)
+            Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(Modifier.height(14.dp))
