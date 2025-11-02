@@ -12,15 +12,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 
 
 @Composable
 fun EntryScreen(
+    isLogged: Boolean,
     onGuestClick: () -> Unit,
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    if (isLogged) {
+        // Si el usuario tiene sesión → se envia a Home
+        LaunchedEffect(Unit) { onGuestClick() }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -28,6 +35,7 @@ fun EntryScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Text(
             "Explora como invitado o inicia sesión para comprar más rápido.",
             style = MaterialTheme.typography.bodyLarge,
