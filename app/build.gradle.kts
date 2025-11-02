@@ -68,6 +68,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.ui.graphics)
     ksp(libs.androidx.room.compiler)
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
