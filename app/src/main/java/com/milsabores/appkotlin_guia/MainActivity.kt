@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -50,6 +51,10 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+
 
         // DataStore fuera del compose
         val prefs = EstadoDataStore(applicationContext)
@@ -92,7 +97,8 @@ class MainActivity : ComponentActivity() {
 
                 // Flags de DataStore
                 val onboardingDone by prefs.onboardingDone.collectAsState(initial = false)
-                val guestMode by prefs.guestMode.collectAsState(initial = false)
+                val guestMode     by prefs.guestMode.collectAsState(initial = false)
+                val isLoggedIn    by prefs.isLoggedIn.collectAsState(initial = false)
 
                 // carrito global (para badge, si lo quieres en algún layout root)
                 val cartUi by cartVm.ui.collectAsState()
@@ -163,8 +169,12 @@ class MainActivity : ComponentActivity() {
                         // 3. Entry (Invitado / Login)
                         composable(AppRoute.Entry.route) {
                             EntryScreen(
+                                isLogged = isLoggedIn,
                                 onGuestClick = {
-                                    scope.launch { prefs.setGuestMode(true) }
+                                    scope.launch {
+                                        prefs.setGuestMode(true)
+                                        prefs.setLoggedIn(false)
+                                    }
                                     navController.navigate(AppRoute.Home.route) {
                                         popUpTo(AppRoute.Entry.route) { inclusive = true }
                                     }
@@ -225,7 +235,7 @@ class MainActivity : ComponentActivity() {
                             CartScreen(
                                 navController = navController,
                                 vm = cartVm,
-                                isGuest = guestMode,
+                                isGuest = !isLoggedIn,
                                 onLoginRequested = {
                                     navController.navigate(AppRoute.Login.route)
                                 }
