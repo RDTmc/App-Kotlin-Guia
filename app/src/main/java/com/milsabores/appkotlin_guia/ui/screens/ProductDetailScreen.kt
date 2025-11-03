@@ -47,7 +47,8 @@ fun ProductDetailScreen(
     navController: NavController,
     productId: String,
     cartVm: CartViewModel,
-    catalogVm: CatalogViewModel
+    catalogVm: CatalogViewModel,
+    isLoggedIn: Boolean
 ) {
     // Compose provee en esta destination
     val vm: ProductDetailViewModel = viewModel()
@@ -145,6 +146,8 @@ fun ProductDetailScreen(
                 com.milsabores.appkotlin_guia.ui.components.BottomNavBar(
                     current = com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME,
                     cartCount = cartCount,
+                    isLoggedIn = isLoggedIn,
+
                     onSelect = { dest ->
                         when (dest) {
                             com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME ->

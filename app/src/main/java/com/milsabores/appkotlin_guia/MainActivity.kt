@@ -271,6 +271,7 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 productId = productId,
                                 cartVm = cartVm,
+                                isLoggedIn = isLoggedIn,
                                 catalogVm = catalogVm
                             )
                         }
