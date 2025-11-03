@@ -16,12 +16,14 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
@@ -32,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.Product
@@ -84,9 +87,14 @@ fun HomeScreen(
         }
     )   {
           Scaffold(
+            containerColor = Color(0xFFFAFAFA),
             topBar = {
                 TopAppBar(
-                    title = { Text("Pantalla Home") },
+                    title = { Text("Mil Sabores", style = MaterialTheme.typography.headlineSmall) }, // Título más destacado
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent, // Fondo transparente
+                        scrolledContainerColor = Color.Transparent
+                    ),
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch { drawerState.open() }
@@ -121,6 +129,8 @@ fun HomeScreen(
                       )
                       .fillMaxSize()
               ) {
+
+
                 // Carrusel
                 TopCarrusel(
                     items = featured.take(3),
