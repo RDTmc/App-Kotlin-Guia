@@ -13,17 +13,22 @@ interface UserDao {
 
     @Query("SELECT * FROM users ORDER BY id DESC")
     fun obtenerUsuarios(): Flow<List<Users>>
+
     @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
-    fun obtenerUsuarioPorId(id: Int): Flow<Users>
+    suspend fun obtenerUsuarioPorId(id: Int): Users?
+
     @Query("SELECT * FROM users WHERE correo = :correo LIMIT 1")
-    fun obtenerUsuarioPorCorreo(correo: String): Flow<Users>
+    suspend fun obtenerUsuarioPorCorreo(correo: String): Users?
+
     @Query("SELECT * FROM users WHERE correo = :correo AND contrasena = :contrasena LIMIT 1")
-    fun buscarPorCredenciales(correo: String, contrasena: String): Flow<Users?>
+    suspend fun buscarPorCredenciales(correo: String, contrasena: String): Users?
+
     @Insert
     suspend fun agregarUsuario(user: Users)
+
     @Update
     suspend fun actualizarUsuario(user: Users)
+
     @Delete
     suspend fun eliminarUsuario(user: Users)
-
 }
