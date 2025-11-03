@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.twotone.Home
 import androidx.compose.material.icons.twotone.Menu
@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
-
+import androidx.compose.material.icons.filled.Roofing
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.twotone.ShoppingBag
 
 
 enum class BottomDest { HOME, MENU, CART, PROFILE }
@@ -31,20 +33,20 @@ fun BottomNavBar(
     onSelect: (BottomDest) -> Unit
 ) {
     NavigationBar(
-        modifier = Modifier.height(75.dp),
+        modifier = Modifier.height(60.dp),
         windowInsets = WindowInsets(0.dp)  // ← Elimina padding interno del sistema
     ) {
         NavigationBarItem(
             selected = current == BottomDest.HOME,
             onClick = { onSelect(BottomDest.HOME) },
-            icon = { Icon(Icons.TwoTone.Home, contentDescription = "Inicio") },
-            label = { Text("Inicio") }
+            icon = { Icon(Icons.Filled.Roofing, contentDescription = "Inicio") }
+
         )
         NavigationBarItem(
             selected = current == BottomDest.MENU,
             onClick = { onSelect(BottomDest.MENU) },
-            icon = { Icon(Icons.TwoTone.Menu, contentDescription = "Menú") },
-            label = { Text("Menú") }
+            icon = { Icon(Icons.Filled.ViewModule, contentDescription = "Menú") }
+
         )
         NavigationBarItem(
             selected = current == BottomDest.CART,
@@ -52,13 +54,12 @@ fun BottomNavBar(
             icon = {
                 if (cartCount > 0) {
                     BadgedBox(badge = { Badge { Text(if (cartCount > 9) "9+" else cartCount.toString()) } }) {
-                        Icon(Icons.TwoTone.ShoppingCart, contentDescription = "Carrito")
+                        Icon(Icons.Filled.ShoppingBasket, contentDescription = "Carrito")
                     }
                 } else {
-                    Icon(Icons.TwoTone.ShoppingCart, contentDescription = "Carrito")
+                    Icon(Icons.Filled.ShoppingBasket, contentDescription = "Carrito")
                 }
-            },
-            label = { Text("Carrito") }
+            }
         )
         NavigationBarItem(
             selected = current == BottomDest.PROFILE,
