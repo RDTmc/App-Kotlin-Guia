@@ -1,7 +1,6 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,10 +49,11 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: MainViewModel= viewModel(),
+    viewModel: MainViewModel = viewModel(),
     navController: NavController,
     cartVm: CartViewModel,
-    catalogVm: CatalogViewModel
+    catalogVm: CatalogViewModel,
+    isLoggedIn: Boolean
 
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -102,6 +100,7 @@ fun HomeScreen(
                 BottomNavBar(
                     current = bottomSel,
                     cartCount = cartCount,
+                    isLoggedIn = isLoggedIn,
                     onSelect = { dest ->
                         bottomSel = dest
                         when (dest) {
