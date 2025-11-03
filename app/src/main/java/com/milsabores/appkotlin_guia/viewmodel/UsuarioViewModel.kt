@@ -56,8 +56,8 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun onAceptarTerminosChange(nuevoAceptarTerminos: Boolean) {
-        _estado.update { it.copy(aceptaTerminos = nuevoAceptarTerminos) }
+    fun onAceptarTerminosChange(ok: Boolean) {
+        _estado.update { it.copy(aceptaTerminos = ok) }
     }
 
     /* ---------- Validación Formulario ---------- */
@@ -107,36 +107,7 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /** Login simple: consulta por credenciales y entrega true/false. */
-    fun login(correo: String, contrasena: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            repo.porCredenciales(correo, contrasena).collect { user ->
-                onResult(user != null)
-            }
-        }
-    }
-
-    /** Cargar datos al estado a partir de un correo. */
-    fun cargarUsuarioPorCorreo(correo: String) {
-        viewModelScope.launch {
-            repo.porCorreo(correo).collect { user ->
-                user?.let {
-                    _estado.update {
-                        it.copy(
-                            nombre = user.nombre,
-                            correo = user.correo,
-                            contrasena = user.contrasena,
-                            direccion = user.direccion,
-                            errores = UsuarioErrores()
-                        )
-                    }
-                }
-            }
-        }
-    }
-
     /** Actualizar un usuario existente por id usando los datos del estado. */
-
     fun actualizarUsuarioExistente(id: Int) {
         val estadoActual = _estado.value
         viewModelScope.launch {
@@ -165,6 +136,33 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
                     estadoActual.direccion
                 )
             )
+        }
+    }
+
+    /** Cargar datos al estado a partir de un correo. */
+    fun cargarUsuarioPorCorreo(correo: String) {
+        viewModelScope.launch {
+            val user = repo.porCorreo(correo)
+            user?.let {
+                _estado.update { st ->
+                    st.copy(
+                        nombre = it.nombre,
+                        correo = it.correo,
+                        contrasena = it.contrasena,
+                        direccion = it.direccion,
+                        errores = UsuarioErrores()
+                    )
+                }
+            }
+        }
+    }
+
+    /** Login simple: consulta por credenciales y entrega true/false. */
+    fun login(correo: String, contrasena: String, onResult: (Boolean, Users?) -> Unit) {
+        viewModelScope.launch {
+            val user = repo.porCredenciales(correo, contrasena)
+            onResult(user != null, user)
+
         }
     }
 }
