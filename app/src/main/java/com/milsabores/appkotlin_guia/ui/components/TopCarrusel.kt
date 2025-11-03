@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -14,12 +15,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
 import com.milsabores.appkotlin_guia.model.Product
+import com.milsabores.appkotlin_guia.ui.theme.BlancoMarfil
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
+import com.milsabores.appkotlin_guia.ui.theme.RosaFuerteDos
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 
 @Composable
@@ -31,6 +39,17 @@ fun TopCarrusel(
     val pagerState = rememberPagerState(pageCount = { items.size.coerceAtLeast(1) })
     val ctx = LocalContext.current
 
+    val shadowStyle = MaterialTheme.typography.titleLarge.copy(
+        fontWeight = FontWeight.Black,
+        color = Color.White, // Texto en blanco para alto contraste
+        fontSize = 20.sp,
+        shadow = androidx.compose.ui.graphics.Shadow( // Efecto de sombra para el relieve
+            color = Color.Black.copy(alpha = 0.8f), // Sombra oscura
+            offset = Offset(2f, 2f), // Desplazamiento
+            blurRadius = 4f // Suavizado
+        )
+    )
+
     HorizontalPager(
         state = pagerState,
         modifier = Modifier
@@ -41,8 +60,9 @@ fun TopCarrusel(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
+                .padding(horizontal = 3.dp),
+            elevation = CardDefaults.cardElevation(3.dp),
+            colors = CardDefaults.cardColors(containerColor = BlancoMarfil)
         ) {
             Box(Modifier.fillMaxSize()) {
                 val res = resIdFor(ctx, p.imagen)
@@ -62,14 +82,28 @@ fun TopCarrusel(
                 ) {
                     Text(
                         p.nombre,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = shadowStyle,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(Modifier.height(6.dp))
                     Row {
-                        Button(onClick = { onOpenProduct(p) }) { Text("Ver detalle") }
+                        Button(
+                            onClick = { onOpenProduct(p) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RosaFuerteDos,
+                                contentColor = BlancoMarfil
+                            )
+                        ) {
+                            Text("Ver detalle", fontWeight = FontWeight.Bold)
+                        }
                         Spacer(Modifier.width(8.dp))
-                        Button(onClick = onSeeMore) { Text("Ver más") }
+                        Button(
+                            onClick = onSeeMore,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RosaFuerteDos,
+                                contentColor = BlancoMarfil
+                            )
+                        ) { Text("Ver más") }
                     }
                 }
             }
