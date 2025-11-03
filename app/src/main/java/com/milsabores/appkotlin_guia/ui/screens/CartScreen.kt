@@ -102,6 +102,8 @@ fun CartScreen(
                     // SummarySection: botón único, activo si hay ítems
                     SummarySection(
                         ui = ui,
+                        isGuest = isGuest,
+                        onLoginRequested = onLoginRequested,
                         onContinue = {
                             // Si es invitado, mostramos Snackbar con acción para iniciar sesión
                             if (isGuest) {
@@ -205,8 +207,18 @@ private fun CartItemRow(
 @Composable
 private fun SummarySection(
     ui: CartUiState,
+    isGuest: Boolean,
+    onLoginRequested: () -> Unit,
     onContinue: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ojo: si ya tienes un SnackbarHost en el Scaffold, pásale este mismo
+    LaunchedEffect(Unit) {
+        // nada, sólo para que exista el host
+    }
+
     Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier

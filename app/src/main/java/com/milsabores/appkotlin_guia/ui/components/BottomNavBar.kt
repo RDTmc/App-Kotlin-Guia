@@ -27,6 +27,7 @@ enum class BottomDest { HOME, MENU, CART, PROFILE }
 fun BottomNavBar(
     current: BottomDest,
     cartCount: Int,
+    isLoggedIn: Boolean,
     onSelect: (BottomDest) -> Unit
 ) {
     NavigationBar(
@@ -62,8 +63,11 @@ fun BottomNavBar(
         NavigationBarItem(
             selected = current == BottomDest.PROFILE,
             onClick = { onSelect(BottomDest.PROFILE) },
-            icon = { Icon(Icons.TwoTone.Person, contentDescription = "Perfil") },
-            label = { Text("Perfil") }
+            icon = {
+                if (isLoggedIn) Icon(Icons.TwoTone.Person, null)
+                else Icon(Icons.Filled.Person, null)
+            },
+            label = { Text(if (isLoggedIn) "Perfil" else "Invitado") }
         )
     }
 }

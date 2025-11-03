@@ -204,7 +204,8 @@ class MainActivity : ComponentActivity() {
                                 viewModel = mainVm,
                                 navController = navController,
                                 cartVm = cartVm,
-                                catalogVm = catalogVm
+                                catalogVm = catalogVm,
+                                isLoggedIn = isLoggedIn
                             )
                         }
 
@@ -272,11 +273,6 @@ class MainActivity : ComponentActivity() {
                                 cartVm = cartVm,
                                 catalogVm = catalogVm
                             )
-                        }
-
-                        // prueba
-                        composable("usuariosTest") {
-                            UsuariosListScreen(vm = usuarioVm)
                         }
                     }
                 }
