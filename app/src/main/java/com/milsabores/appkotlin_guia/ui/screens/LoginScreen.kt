@@ -70,11 +70,12 @@ fun LoginScreen(
                         return@Button
                     }
                     // login real usando tu VM
-                    usuarioVm.login(email, pass) { ok ->
-                        if (ok) {
+                    usuarioVm.login(email, pass) { ok, user ->
+                        if (ok && user != null) {
                             scope.launch {
                                 prefs.setGuestMode(false)
                                 prefs.setLoggedIn(true)
+                                prefs.setUserEmail(user.correo)
                             }
 
                             navController.navigate(AppRoute.Home.route) {
