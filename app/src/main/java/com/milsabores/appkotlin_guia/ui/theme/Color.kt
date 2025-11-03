@@ -9,6 +9,15 @@ val RosaClaro   = Color(0xFFFFC0CB)   // + suave
 val Chocolate   = Color(0xFF573123)   // principal
 val Celeste     = Color(0xFF86DBDE)
 
+val Vainilla     = Color(0xFFE7C196)
+val Cafe         = Color(0xFF6D4C41)
+val Rosa         = Color(0xFFF48FB1)
+val CafeOsc      = Color(0xFF382417)
+val CafeText     = Color(0xFFFFFFFF)
+val RosaText     = Color(0xFFFFE0FF)
+val CelesteText  = Color(0xFF81D4FA)
+
+
 // Texto
 val TextoPrincipal  = Color(0xFF5D4037)
 val TextoSecundario = Color(0xFFB0BEC5)
