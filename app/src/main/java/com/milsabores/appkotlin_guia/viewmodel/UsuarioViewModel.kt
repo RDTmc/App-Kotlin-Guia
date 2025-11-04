@@ -157,6 +157,25 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** Actualiza nombre/dirección del usuario identificado por su correo en estado.
+     *  Devuelve true si se pudo actualizar, false si no existe.
+     */
+    suspend fun guardarPerfilPorCorreo(): Boolean {
+        val s = estado.value
+        if (s.correo.isBlank()) return false
+        val existente = repo.porCorreo(s.correo) ?: return false
+        repo.actualizar(
+            existente.copy(
+                nombre = s.nombre,
+                direccion = s.direccion,
+                contrasena = s.contrasena
+                // Si quisieras permitir cambiar contraseña aquí, añade: contrasena = s.contrasena
+            )
+        )
+        return true
+    }
+
+
     /** Login simple: consulta por credenciales y entrega true/false. */
     fun login(correo: String, contrasena: String, onResult: (Boolean, Users?) -> Unit) {
         viewModelScope.launch {
