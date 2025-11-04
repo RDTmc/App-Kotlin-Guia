@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,11 +30,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.Users
 import com.milsabores.appkotlin_guia.navigation.AppRoute
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,7 +54,7 @@ fun RegistroScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color.White
+        containerColor = BlancoDos
     ) { paddingValues ->
         Column(
             Modifier
@@ -68,7 +75,15 @@ fun RegistroScreen(
                         Text(it, color = MaterialTheme.colorScheme.error)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Chocolate,
+                    unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+                    focusedLabelColor = Chocolate,
+                    cursorColor = Chocolate,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                )
             )
 
             OutlinedTextField(
@@ -82,7 +97,15 @@ fun RegistroScreen(
                         Text(it, color = MaterialTheme.colorScheme.error)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Chocolate,
+                    unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+                    focusedLabelColor = Chocolate,
+                    cursorColor = Chocolate,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                )
             )
 
             OutlinedTextField(
@@ -96,7 +119,15 @@ fun RegistroScreen(
                         Text(it, color = MaterialTheme.colorScheme.error)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Chocolate,
+                    unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+                    focusedLabelColor = Chocolate,
+                    cursorColor = Chocolate,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                )
             )
 
             OutlinedTextField(
@@ -110,16 +141,29 @@ fun RegistroScreen(
                         Text(it, color = MaterialTheme.colorScheme.error)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Chocolate,
+                    unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+                    focusedLabelColor = Chocolate,
+                    cursorColor = Chocolate,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                )
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = estado.aceptaTerminos,
-                    onCheckedChange = viewModel::onAceptarTerminosChange
+                    onCheckedChange = viewModel::onAceptarTerminosChange,
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = Chocolate,
+                        uncheckedColor = Chocolate.copy(alpha = 0.7f),
+                        checkmarkColor = RosaClaro
+                    )
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Acepto los términos y condiciones")
+                Text("Acepto los términos y condiciones", color = Chocolate)
             }
 
             Button(
@@ -137,17 +181,13 @@ fun RegistroScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Chocolate,
+                    contentColor = RosaClaro
+                )
             ) {
-                Text("Registrar")
-            }
-
-            // dejamos el botón de test para tus pruebas
-            OutlinedButton(
-                onClick = { navController.navigate("usuariosTest") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Ver usuarios (test)")
+                Text("Registrar", fontWeight = FontWeight.SemiBold)
             }
         }
     }
