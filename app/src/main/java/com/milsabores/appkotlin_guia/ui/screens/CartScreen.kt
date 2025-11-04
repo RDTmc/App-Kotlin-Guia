@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
@@ -24,7 +25,10 @@ import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartUiState
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import androidx.compose.ui.graphics.Color
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +47,15 @@ fun CartScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
+        containerColor = BlancoDos,
         topBar = {
-            TopAppBar(title = { Text("Carrito") })
+            TopAppBar(
+                title = { Text("Carrito") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = Chocolate
+                )
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { pv ->
@@ -59,7 +70,7 @@ fun CartScreen(
                         .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Tu carrito está vacío")
+                    Text("Tu carrito está vacío", color = Chocolate)
                 }
             } else {
                 Column(
