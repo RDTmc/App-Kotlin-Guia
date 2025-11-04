@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,9 @@ import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.components.ImagenInteligente
 import com.milsabores.appkotlin_guia.ui.components.BottomNavBar
 import com.milsabores.appkotlin_guia.ui.components.BottomDest
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
 import com.milsabores.appkotlin_guia.viewmodel.PerfilViewModel
 import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
@@ -76,6 +80,7 @@ fun ProfileScreen(
     val snack = remember { SnackbarHostState() }
 
     Scaffold(
+        containerColor = BlancoDos,
         topBar = {
             TopAppBar(
                 title = { Text(if (isLoggedIn) "Mi perfil" else "Invitado") },
@@ -122,10 +127,10 @@ fun ProfileScreen(
                 Button(
                     onClick = { navController.navigate(AppRoute.Login.route) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = androidx.compose.ui.graphics.Color(0xFF573123),
-                        contentColor = androidx.compose.ui.graphics.Color.White
+                        containerColor = Chocolate,
+                        contentColor = RosaClaro
                     )
-                ) { Text("Iniciar sesión") }
+                ) { Text("Iniciar sesión", fontWeight = FontWeight.SemiBold) }
             }
             return@Scaffold
         }
@@ -135,11 +140,12 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(pv)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Perfil de usuario", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Perfil de usuario", style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold, color = Chocolate)
 
             // Imagen circular reutilizable
             ImagenInteligente(uri = foto)
@@ -150,7 +156,19 @@ fun ProfileScreen(
                 Button(onClick = { requestCamera.launch(Manifest.permission.CAMERA) }) { Text("Usar cámara") }
             }
 
-            OutlinedButton(onClick = { perfilVm.clear() }) { Text("Quitar imagen") }
+            OutlinedButton(
+                onClick = { perfilVm.clear() },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Chocolate)
+            ) { Text("Quitar imagen") }
+
+            val textFieldColors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Chocolate,
+                unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+                focusedLabelColor = Chocolate,
+                cursorColor = Chocolate,
+                unfocusedContainerColor = BlancoDos,
+                focusedContainerColor = BlancoDos
+            )
 
             // Datos de cuenta
             OutlinedTextField(
@@ -158,7 +176,8 @@ fun ProfileScreen(
                 onValueChange = usuarioVm::onNombreChange,
                 label = { Text("Nombre completo") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
             )
             OutlinedTextField(
                 value = ui.correo,
@@ -166,7 +185,8 @@ fun ProfileScreen(
                 label = { Text("Email") },
                 singleLine = true,
                 readOnly = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
             )
             OutlinedTextField(
                 value = ui.direccion,
@@ -176,6 +196,8 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.weight(1f))
+
             // Botones de acción
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -184,7 +206,6 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         // Guardar cambios de perfil:
-                        // Requiere un método en VM que actualice por correo (ver snippet abajo).
                         scope.launch {
                             val ok = usuarioVm.guardarPerfilPorCorreo() // <-- ver implementación sugerida
                             if (ok) {
@@ -196,10 +217,10 @@ fun ProfileScreen(
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = androidx.compose.ui.graphics.Color(0xFF573123),
-                        contentColor = androidx.compose.ui.graphics.Color.White
+                        containerColor = Chocolate,
+                        contentColor = RosaClaro
                     )
-                ) { Text("Guardar") }
+                ) { Text("Guardar", fontWeight = FontWeight.SemiBold) }
 
                 OutlinedButton(
                     onClick = {
@@ -213,7 +234,8 @@ fun ProfileScreen(
                             popUpTo(AppRoute.Home.route) { inclusive = true }
                         }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Chocolate)
                 ) { Text("Cerrar sesión") }
             }
         }
