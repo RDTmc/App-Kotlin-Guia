@@ -12,10 +12,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.navigation.AppRoute
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 
 @Composable
 fun CheckoutSuccessScreen(navController: NavController) {
-    Scaffold { pv ->
+    Scaffold(containerColor = BlancoDos){ pv ->
         Box(
             modifier = Modifier
                 .padding(pv)
@@ -32,8 +35,10 @@ fun CheckoutSuccessScreen(navController: NavController) {
                     tint = Color(0xFF4CAF50),
                     modifier = Modifier.size(92.dp)
                 )
-                Text("Compra realizada", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Te enviaremos el detalle a tu correo.")
+                Text("Compra realizada", style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold)
+                Text("Te enviaremos el detalle a tu correo.",
+                    color = Chocolate.copy(alpha = 0.8f))
                 Button(
                     onClick = {
                         navController.navigate(AppRoute.Home.route) {
@@ -41,11 +46,11 @@ fun CheckoutSuccessScreen(navController: NavController) {
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF573123),
-                        contentColor = Color.White
+                        containerColor = Chocolate,
+                        contentColor = RosaClaro
                     )
                 ) {
-                    Text("Volver al inicio")
+                    Text("Volver al inicio", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
