@@ -1,40 +1,63 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.TransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.test.utils.Action
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.model.CartItem
-import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.navigation.AppRoute
-import com.milsabores.appkotlin_guia.ui.components.ProductCard
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.BlancoMarfil
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaroDos
+import com.milsabores.appkotlin_guia.ui.theme.TextoPrincipal
+import com.milsabores.appkotlin_guia.ui.util.isCakeLike
+import com.milsabores.appkotlin_guia.ui.util.priceFor
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
@@ -50,120 +73,136 @@ fun ProductDetailScreen(
     catalogVm: CatalogViewModel,
     isLoggedIn: Boolean
 ) {
-    // Compose provee en esta destination
     val vm: ProductDetailViewModel = viewModel()
     val ui by vm.ui.collectAsState()
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
     // cargar el producto al entrar
-    LaunchedEffect(productId) {
-        vm.load(productId, catalogVm)
-    }
+    LaunchedEffect(productId) { vm.load(productId, catalogVm) }
 
-    var addedMsg by remember { mutableStateOf(false) }
+    // Snackbar + label temporal del botón
+    val snackbarHost = remember { SnackbarHostState() }
+    var showAddedLabel by remember { mutableStateOf(false) }
+    var lastAddedQty by remember { mutableIntStateOf(0) }
 
     Scaffold(
+        containerColor = BlancoDos,
+        snackbarHost = { SnackbarHost(hostState = snackbarHost) },
         topBar = {
+            val cartCount = cartVm.ui.collectAsState().value.items.sumOf { it.quantity }
             TopAppBar(
                 title = { Text(ui.product?.nombre ?: "Producto") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = Chocolate,
+                    navigationIconContentColor = Chocolate,
+                    actionIconContentColor = Chocolate
+                ),
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate(AppRoute.Cart.route) }) {
+                        BadgedBox(badge = { if (cartCount > 0) Badge { Text("$cartCount") } }) {
+                            Icon(Icons.Filled.ShoppingBasket, contentDescription = "Carrito")
+                        }
                     }
                 }
             )
         },
         bottomBar = {
-            val cartCount = cartVm.ui.collectAsState().value.items.sumOf { it.quantity }
+            // Barra de acciones del producto (sin BottomNavBar aquí)
+            BottomAppBar(containerColor = RosaClaroDos) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { vm.decQty() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Chocolate),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(Chocolate)
+                        )
+                    ) { Text("−") }
 
-            Column {
-                // 1) barra de acciones del producto (la tuya)
-                BottomAppBar(containerColor = Color(0xFFFFF5E1)) {
-                    Row(
+                    val alpha by animateFloatAsState(
+                        targetValue = if (ui.showShine) 1f else 0f,
+                        animationSpec = tween(350, easing = FastOutLinearInEasing),
+                        finishedListener = { vm.consumeShine() }
+                    )
+
+                    Text(
+                        " ${ui.qty} ",
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedButton(onClick = { vm.decQty() }) { Text("−") }
+                            .size(20.dp)
+                            .alpha(alpha)
+                            .background(RosaClaroDos, shape = androidx.compose.material3.MaterialTheme.shapes.small)
+                    )
 
-                        val alpha by animateFloatAsState(
-                            targetValue = if (ui.showShine) 1f else 0f,
-                            animationSpec = tween(350, easing = FastOutLinearInEasing),
-                            finishedListener = { vm.consumeShine() }
+                    OutlinedButton(
+                        onClick = { vm.incQty() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Chocolate),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(Chocolate)
                         )
+                    ) { Text("+") }
 
-                        Text(
-                            " ${ui.qty} ",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
+                    Spacer(Modifier.weight(1f))
 
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .alpha(alpha)
-                                .background(Color(0xFFFFC0CB), shape = MaterialTheme.shapes.small)
-                        )
-
-                        OutlinedButton(onClick = { vm.incQty() }) { Text("+") }
-
-                        Spacer(Modifier.weight(1f))
-                        Button(
-                            onClick = {
-                                val p = ui.product ?: return@Button
-                                val unit = calcPriceWithSize(p.precio, ui.selectedTamano)
-                                cartVm.addOrIncrease(
-                                    CartItem(
-                                        productId = p.id,
-                                        name = p.nombre,
-                                        image = p.imagen,
-                                        size = ui.selectedTamano,
-                                        flavor = null,
-                                        quantity = ui.qty,
-                                        unitPrice = unit
-                                    )
+                    Button(
+                        onClick = {
+                            val p = ui.product ?: return@Button
+                            val unit = priceFor(p, p.precio, ui.selectedTamano)
+                            cartVm.addOrIncrease(
+                                CartItem(
+                                    productId = p.id,
+                                    name = p.nombre,
+                                    image = p.imagen,
+                                    size = ui.selectedTamano,
+                                    flavor = null,
+                                    quantity = ui.qty,
+                                    unitPrice = unit
                                 )
-                                addedMsg = true
-                                scope.launch {
-                                    kotlinx.coroutines.delay(1600)
-                                    addedMsg = false
+                            )
+                            // Feedback: label temporal + snackbar con acción
+                            lastAddedQty = ui.qty
+                            showAddedLabel = true
+                            scope.launch {
+                                val result = snackbarHost.showSnackbar(
+                                    message = "Agregado al carrito",
+                                    actionLabel = "Ver carrito",
+                                    withDismissAction = true,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    navController.navigate(AppRoute.Cart.route)
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF573123),
-                                contentColor = Color.White
-                            ),
-                            modifier = Modifier.height(46.dp)
-                        ) {
-                            Text("Agregar al carrito")
-                        }
+
+                                kotlinx.coroutines.delay(1600)
+                                showAddedLabel = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Chocolate,
+                            contentColor = BlancoMarfil
+                        ),
+                        modifier = Modifier.height(46.dp)
+                    ) {
+                        Text(addedLabel("Agregar al carrito", showAddedLabel, lastAddedQty), fontWeight = FontWeight.Bold)
                     }
                 }
-
-                // 2) bottom nav reutilizada (la misma que en Home)
-                com.milsabores.appkotlin_guia.ui.components.BottomNavBar(
-                    current = com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME,
-                    cartCount = cartCount,
-                    isLoggedIn = isLoggedIn,
-
-                    onSelect = { dest ->
-                        when (dest) {
-                            com.milsabores.appkotlin_guia.ui.components.BottomDest.HOME ->
-                                navController.navigate(AppRoute.Home.route)
-                            com.milsabores.appkotlin_guia.ui.components.BottomDest.MENU ->
-                                navController.navigate(AppRoute.Resumen.route)
-                            com.milsabores.appkotlin_guia.ui.components.BottomDest.CART ->
-                                navController.navigate(AppRoute.Cart.route)
-                            com.milsabores.appkotlin_guia.ui.components.BottomDest.PROFILE ->
-                                navController.navigate(AppRoute.Profile.route)
-                        }
-                    }
-                )
             }
         }
-
     ) { pv ->
         val p = ui.product
         if (p == null) {
@@ -173,7 +212,7 @@ fun ProductDetailScreen(
                     .padding(pv),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Chocolate)
             }
             return@Scaffold
         }
@@ -182,16 +221,15 @@ fun ProductDetailScreen(
             modifier = Modifier
                 .padding(pv)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Imagen grande
+            // Imagen grande con zoom
             val res = resIdFor(ctx, p.imagen ?: "")
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
-                    .background(Color(0xFFF2F2F2)),
+                    .height(240.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (res != 0) {
@@ -200,53 +238,26 @@ fun ProductDetailScreen(
                         contentDescription = p.nombre,
                         modifier = Modifier
                             .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { vm.setZoom(true) },
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Text("Sin imagen")
+                    Text("Sin imagen", color = TextoPrincipal)
                 }
             }
 
-            // mensaje de agregado
-            AnimatedVisibility(
-                visible = addedMsg,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 8.dp)
-            ) {
-                Surface(
-                    color = Color(0xAA000000),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Icon(Icons.Default.Check,
-                            contentDescription = null, tint = Color.White)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Agregado al carrito", color = Color.White)
-                    }
-                }
-            }
-
-
-            // título + precio + rating fijo
-            Text(p.nombre, style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold)
+            // Título + rating + precio calculado
+            Text(p.nombre, fontWeight = FontWeight.Bold)
             Text("★★★★☆ (128 reseñas)")
-            // precio mostrado con recargo
-            val finalPrice = calcPriceWithSize(p.precio, ui.selectedTamano)
-            Text(
-                "$$finalPrice",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF573123)
-            )
+            val finalPrice = priceFor(p, p.precio, ui.selectedTamano)
+            Text("$$finalPrice", fontWeight = FontWeight.ExtraBold, color = Chocolate)
 
-            // Tamaños (con recargo)
-            Text("Tamaño / porciones", fontWeight = FontWeight.SemiBold)
+            // Chips de tamaño (porciones o tallas)
+            Text(
+                if (isCakeLike(p)) "Tamaño (porciones)" else "Tamaño",
+                fontWeight = FontWeight.SemiBold
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ui.tamanos.forEach { t ->
                     FilterChip(
@@ -254,30 +265,31 @@ fun ProductDetailScreen(
                         onClick = { vm.setTamano(t) },
                         label = {
                             Text(
-                                when (t) {
-                                    "10 porciones" -> "10 porciones"
-                                    "12 porciones" -> "12 porciones"
+                                when {
+                                    isCakeLike(p) && t == "10 porciones" -> "10 (+3.000)"
+                                    isCakeLike(p) && t == "12 porciones" -> "12 (+5.000)"
+                                    !isCakeLike(p) && t == "Mediano" -> "Mediano (+1.500)"
+                                    !isCakeLike(p) && t == "Grande" -> "Grande (+3.000)"
                                     else -> t
-                                }
+                                },
+                                color = if (ui.selectedTamano == t) RosaClaro else Chocolate
                             )
-                        }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = RosaClaro,
+                            labelColor = Chocolate,
+                            selectedContainerColor = Chocolate,
+                            selectedLabelColor = RosaClaro
+                        )
                     )
                 }
             }
 
-            // ir al carrito
-            OutlinedButton(
-                onClick = { navController.navigate(AppRoute.Cart.route) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Ir al carrito")
-            }
         }
 
-        // modal zoom
+        // Modal de zoom
         if (ui.showZoom && ui.product != null) {
             val zoomRes = resIdFor(ctx, ui.product!!.imagen ?: "")
-
             AlertDialog(
                 onDismissRequest = { vm.setZoom(false) },
                 confirmButton = {},
@@ -296,15 +308,6 @@ fun ProductDetailScreen(
     }
 }
 
-/**
- * Calcula precio según tamaño:
- * 8 porciones → base
- * 10 porciones → +3.000
- * 12 porciones → +5.000
- */
-private fun calcPriceWithSize(base: Int, size: String?): Int =
-    when (size) {
-        "10 porciones" -> base + 3000
-        "12 porciones" -> base + 5000
-        else -> base
-    }
+/** Texto dinámico para el botón principal. */
+private fun addedLabel(default: String, show: Boolean, qty: Int): String =
+    if (show) "Agregado ✓ ($qty)" else default

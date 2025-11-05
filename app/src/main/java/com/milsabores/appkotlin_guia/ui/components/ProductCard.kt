@@ -24,6 +24,10 @@ import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.blur
+import com.milsabores.appkotlin_guia.ui.theme.BlancoMarfil
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaroDos
+import com.milsabores.appkotlin_guia.ui.theme.RosaText
 
 @Composable
 fun ProductCard(
@@ -40,7 +44,6 @@ fun ProductCard(
             .fillMaxWidth()
             .aspectRatio(cardAspect),
         shape = RoundedCornerShape(12.dp),
-        // usar color surface explícito (no transparente) para evitar que se vea el fondo crema por detrás
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 3.dp,
         onClick = { onOpen(product) }
@@ -88,9 +91,9 @@ fun ProductCard(
                 modifier = Modifier
                     .weight(0.48f)
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.1f),
+                    .background(
+                        RosaClaroDos.copy(alpha = 0.02f),
                         RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                    .blur(radius = 1.dp)
                     .padding(horizontal = 6.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.Top
             ) {
@@ -107,7 +110,8 @@ fun ProductCard(
                         text = product.nombre,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Chocolate
                         ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

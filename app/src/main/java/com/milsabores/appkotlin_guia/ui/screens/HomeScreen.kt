@@ -1,5 +1,6 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
+import android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -127,7 +129,8 @@ fun HomeScreen(
                     // 💡 Ícono de Acción (Ejemplo: Ícono de Búsqueda o Carrito)
                     actions = {
                         IconButton(onClick = { /* Abre la búsqueda en pantalla completa */ }) {
-                            Icon(Icons.Default.Search, contentDescription = "Buscar")
+                            Icon(Icons.Filled.Cake, contentDescription = "Torta",
+                                tint = Chocolate)
                         }
                     }
                 )

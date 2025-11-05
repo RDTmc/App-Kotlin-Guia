@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
@@ -44,6 +45,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.milsabores.appkotlin_guia.ui.screens.CheckoutSuccessScreen
 import com.milsabores.appkotlin_guia.ui.screens.LoginScreen
+import com.milsabores.appkotlin_guia.ui.screens.MenuScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -102,7 +104,7 @@ class MainActivity : ComponentActivity() {
 
                 // carrito global (para badge, si lo quieres en algún layout root)
                 val cartUi by cartVm.ui.collectAsState()
-                val cartCount = cartUi.items.sumOf { it.quantity }  // <- ahora sí existe
+                val cartCount = remember(cartUi.items) { cartUi.items.sumOf { it.quantity } }
 
 
                 // Navegación desde el VM
@@ -218,7 +220,13 @@ class MainActivity : ComponentActivity() {
 
                         // Perfil
                         composable(AppRoute.Profile.route) {
-                            ProfileScreen(mainVm, navController)
+                            ProfileScreen(
+                                navController = navController,
+                                mainVm = mainVm,
+                                prefs = prefs,
+                                cartCount = cartCount,
+                                isLoggedInOverride = isLoggedIn
+                            )
                         }
 
                         // Estado
@@ -229,6 +237,13 @@ class MainActivity : ComponentActivity() {
                         // Resumen
                         composable(AppRoute.Resumen.route) {
                             ResumenScreen(usuarioVm)
+                        }
+                        // Menu
+                        composable(AppRoute.Menu.route) {
+                            MenuScreen(
+                                navController = navController,
+                                catalogVm = catalogVm
+                            )
                         }
 
                         // Carrito

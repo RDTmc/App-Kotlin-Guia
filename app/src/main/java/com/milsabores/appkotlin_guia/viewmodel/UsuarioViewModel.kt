@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 
 class UsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -184,4 +186,18 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
 
         }
     }
+
+    suspend fun cambiarPassword(actual: String, nueva: String, confirmar: String): Boolean {
+        val hasUpper = nueva.any { it.isUpperCase() }
+        val hasNum   = nueva.any { it.isDigit() }
+        if (nueva.length < 8 || !hasUpper || !hasNum || nueva != confirmar) return false
+
+        val correo = estado.value.correo
+        val user   = repo.porCredenciales(correo, actual) ?: return false  //
+
+        repo.actualizarPasswordPorCorreo(correo, nueva)
+        return true
+    }
+
+
 }

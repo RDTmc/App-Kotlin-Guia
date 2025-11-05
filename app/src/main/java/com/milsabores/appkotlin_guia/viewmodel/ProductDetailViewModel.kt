@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.model.CartItem
+import com.milsabores.appkotlin_guia.ui.util.sizesFor
+import kotlinx.coroutines.flow.update
 
 
 data class ProductDetailUiState(
@@ -33,13 +35,14 @@ class ProductDetailViewModel(
      */
     fun load(productId: String, catalogVm: CatalogViewModel) {
         val p = catalogVm.getProduct(productId)
-        val sizes =
-            (p?.tamanos?.takeIf { it.isNotEmpty() } ?: listOf("Chico", "Mediano", "Grande"))
-        _ui.value = _ui.value.copy(
-            product = p,
-            tamanos = sizes,
-            selectedTamano = sizes.firstOrNull()
-        )
+        val sizes = p?.let { sizesFor(it) }.orEmpty()
+        _ui.update {
+            it.copy(
+                product = p,
+                tamanos = sizes,
+                selectedTamano = sizes.firstOrNull()
+            )
+        }
     }
 
     fun setTamano(t: String) {

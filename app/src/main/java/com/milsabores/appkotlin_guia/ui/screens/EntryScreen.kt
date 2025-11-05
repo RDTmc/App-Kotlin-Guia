@@ -1,5 +1,6 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -8,13 +9,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AppRegistration
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
+import com.milsabores.appkotlin_guia.ui.theme.Cafe
+import com.milsabores.appkotlin_guia.ui.theme.CafeOsc
+import com.milsabores.appkotlin_guia.ui.theme.CafeText
+import com.milsabores.appkotlin_guia.ui.theme.Rosa
+import com.milsabores.appkotlin_guia.ui.theme.RosaText
+import com.milsabores.appkotlin_guia.ui.theme.Vainilla
 
 @Composable
 fun EntryScreen(
@@ -28,49 +43,90 @@ fun EntryScreen(
         LaunchedEffect(Unit) { onGuestClick() }
         return
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color(0xFFFAFAFA)
     ) {
-
-        Text(
-            "Explora como invitado o inicia sesión para comprar más rápido.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(Modifier.height(28.dp))
-
-        Button(
-            onClick = onGuestClick,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Entrar como invitado", fontWeight = FontWeight.SemiBold)
-        }
-        Spacer(Modifier.height(14.dp))
 
-        Button(
-            onClick = onLoginClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-        ) {
-            Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
-        }
+            Text(
+                buildAnnotatedString {
+                    append("Ingresa como invitado o ")
+                    withStyle(style = SpanStyle(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    ) {
+                        append("inicia sesión para más ventajas.")
+                    }
+                },
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 32.dp),
+                textAlign = TextAlign.Center
+            )
 
-        Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(28.dp))
 
-        OutlinedButton(
-            onClick = onRegisterClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text("Crear cuenta")
+            ElevatedButton(
+                onClick = onGuestClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.elevatedButtonColors(
+                    containerColor = Cafe,
+                    contentColor = CafeText
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.Filled.PersonPin, contentDescription = "Invitado", modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Invitado", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            FilledTonalButton(
+                onClick = onLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Rosa,
+                    contentColor = RosaText
+                ),
+                shape = MaterialTheme.shapes.medium
+
+            ) {
+                Icon(Icons.Filled.Person, contentDescription = "Iniciar sesión", modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Iniciar sesión", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = onRegisterClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Vainilla,
+                    contentColor = CafeOsc
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.Filled.AppRegistration, contentDescription = "Crear cuenta", modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Crear cuenta", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            }
+
         }
     }
 }

@@ -4,7 +4,12 @@ import androidx.compose.ui.graphics.Color
 
 // Paleta marca
 val BlancoMarfil = Color(0xFFFAFAFA)
+
+val BlancoDos   = Color(0xFFFCFCFC)   // + suave
+
 val RosaSuave   = Color(0xFFFF69B4)   // + vivo
+
+val RosaClaroDos = Color(0xFFF8F8F9)   // + suave
 val RosaClaro   = Color(0xFFFFC0CB)   // + suave
 val Chocolate   = Color(0xFF573123)   // principal
 val Celeste     = Color(0xFF86DBDE)
@@ -16,6 +21,9 @@ val CafeOsc      = Color(0xFF382417)
 val CafeText     = Color(0xFFFFFFFF)
 val RosaText     = Color(0xFFFFE0FF)
 val CelesteText  = Color(0xFF81D4FA)
+
+val RosaFuerte = Color((0xFFFF1b82) )
+val RosaFuerteDos = Color((0xFFF70071) )
 
 
 // Texto

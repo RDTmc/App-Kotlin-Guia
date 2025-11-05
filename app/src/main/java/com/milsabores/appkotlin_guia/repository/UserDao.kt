@@ -31,4 +31,8 @@ interface UserDao {
 
     @Delete
     suspend fun eliminarUsuario(user: Users)
+
+    @Query("UPDATE users SET contrasena = :nueva WHERE correo = :correo")
+    suspend fun actualizarPasswordPorCorreo(correo: String, nueva: String)
+
 }

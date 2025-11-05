@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.navigation.AppRoute
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
+import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 import com.milsabores.appkotlin_guia.viewmodel.CartUiState
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import java.time.Instant
@@ -50,7 +54,17 @@ fun CheckoutScreen(
     // NUEVO: modal para invitados
     var showLoginModal by remember { mutableStateOf(false) }
 
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = Chocolate,
+        unfocusedBorderColor = Chocolate.copy(alpha = 0.5f),
+        focusedLabelColor = Chocolate,
+        cursorColor = Chocolate,
+        unfocusedContainerColor = BlancoDos,
+        focusedContainerColor = BlancoDos
+    )
+
     Scaffold(
+        containerColor = BlancoDos,
         topBar = { TopAppBar(title = { Text("Pago") }) },
         bottomBar = {
             Button(
@@ -78,11 +92,11 @@ fun CheckoutScreen(
                     .fillMaxWidth()
                     .padding(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = androidx.compose.ui.graphics.Color(0xFF573123),
-                    contentColor = androidx.compose.ui.graphics.Color.White
+                    containerColor = Chocolate,
+                    contentColor = RosaClaro
                 )
             ) {
-                Text("Confirmar compra")
+                Text("Confirmar compra", fontWeight = FontWeight.SemiBold)
             }
         }
     ) { pv ->
@@ -101,7 +115,8 @@ fun CheckoutScreen(
                     onValueChange = { nombre = it },
                     label = { Text("Nombre completo") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors
                 )
             }
             item {
@@ -110,7 +125,8 @@ fun CheckoutScreen(
                     onValueChange = { direccion = it },
                     label = { Text("Dirección de entrega") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors
                 )
             }
 
@@ -124,7 +140,8 @@ fun CheckoutScreen(
                             onValueChange = {},
                             label = { Text("Fecha") },
                             readOnly = true,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = textFieldColors
                         )
                         Box(
                             modifier = Modifier
@@ -146,7 +163,8 @@ fun CheckoutScreen(
                                 label = { Text("Hora") },
                                 modifier = Modifier
                                     .menuAnchor()
-                                    .fillMaxWidth()
+                                    .fillMaxWidth(),
+                                colors = textFieldColors
                             )
                             ExposedDropdownMenu(
                                 expanded = horaExpanded,
@@ -169,7 +187,7 @@ fun CheckoutScreen(
 
             item { Text("Método de pago", style = MaterialTheme.typography.titleMedium) }
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     PaymentRadio("Efectivo", metodo) { metodo = it }
                     PaymentRadio("Transferencia", metodo) { metodo = it }
                     PaymentRadio("Tarjeta / Webpay", metodo) { metodo = it }
@@ -201,7 +219,9 @@ fun CheckoutScreen(
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDatePicker = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
+                ) { Text("Cancelar") }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -218,7 +238,9 @@ fun CheckoutScreen(
                 TextButton(onClick = {
                     showLoginModal = false
                     navController.navigate(AppRoute.Login.route)
-                }) {
+                },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
+                ) {
                     Text("Iniciar sesión")
                 }
             },
@@ -226,7 +248,9 @@ fun CheckoutScreen(
                 TextButton(onClick = {
                     showLoginModal = false
                     navController.navigate(AppRoute.Register.route)
-                }) {
+                },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
+                ) {
                     Text("Registrarme")
                 }
             }
@@ -239,9 +263,13 @@ private fun PaymentRadio(label: String, selected: String, onSelected: (String) -
     Row(verticalAlignment = Alignment.CenterVertically) {
         RadioButton(
             selected = selected == label,
-            onClick = { onSelected(label) }
+            onClick = { onSelected(label) },
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Chocolate, // 💡 Color de selección
+            unselectedColor = Chocolate.copy(alpha = 0.7f)
+            )
         )
-        Text(label)
+        Text(label, color = Chocolate)
     }
 }
 

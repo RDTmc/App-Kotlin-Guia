@@ -47,11 +47,11 @@ fun SplashScreen(onFinish: () -> Unit) {
             contentScale = ContentScale.Crop
         )
         val screenHeight = this.maxHeight  // Altura del Box/Pantalla
-        val imageHeight = 200.dp
+        val imageHeight = 150.dp
 
         // Calcular el offset vertical (3/4 de la altura)
         // Se resta la mitad de la altura de la imagen para centrarla verticalmente en ese punto
-        val topOffsetDp = screenHeight / 6f - imageHeight / 2f
+        val topOffsetDp = screenHeight / 7f - imageHeight / 2f
         Image(
             painter = painterResource(R.drawable.logo_ms_pasteleria),
             contentDescription = "Mil Sabores",

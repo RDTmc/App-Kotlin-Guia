@@ -20,6 +20,9 @@ class UsuarioRepository private constructor(context: Context) {
     suspend fun actualizar(user: Users) = dao.actualizarUsuario(user)
     suspend fun eliminar(user: Users) = dao.eliminarUsuario(user)
 
+    suspend fun actualizarPasswordPorCorreo(correo: String, nueva: String) =
+        dao.actualizarPasswordPorCorreo(correo, nueva)
+
     companion object {
         @Volatile private var INSTANCE: UsuarioRepository? = null
         fun get(context: Context): UsuarioRepository =

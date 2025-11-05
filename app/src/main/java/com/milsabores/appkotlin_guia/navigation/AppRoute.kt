@@ -13,6 +13,8 @@ sealed class AppRoute(val route:String) {
 
     data object Resumen : AppRoute("resumen")
 
+    data object Menu : AppRoute("menu")
+
     data object Estado : AppRoute("estado")
 
     data object Cart : AppRoute("cart")

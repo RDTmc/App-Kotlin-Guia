@@ -96,14 +96,6 @@ fun TopCarrusel(
                         ) {
                             Text("Ver detalle", fontWeight = FontWeight.Bold)
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Button(
-                            onClick = onSeeMore,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RosaFuerteDos,
-                                contentColor = BlancoMarfil
-                            )
-                        ) { Text("Ver más") }
                     }
                 }
             }
