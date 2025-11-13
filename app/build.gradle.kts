@@ -77,6 +77,19 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
 
+    // Retrofit + OkHttp
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Converter JSON (Moshi)
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
+    implementation("com.squareup.moshi:moshi:1.15.1")
+    // (Opcional) Soporte a data classes de Kotlin
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+    // (Opcional) Codegen de Moshi si quieres performance (ya tienes KSP):
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
