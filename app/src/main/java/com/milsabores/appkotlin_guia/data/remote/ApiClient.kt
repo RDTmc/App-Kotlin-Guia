@@ -2,6 +2,8 @@ package com.milsabores.appkotlin_guia.data.remote
 
 import com.milsabores.appkotlin_guia.data.remote.dto.PagedProductsDto
 import com.milsabores.appkotlin_guia.data.remote.dto.ProductDto
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -11,22 +13,16 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
-// 🔧 Configuración centralizada
+// Configuración centralizada
 private object NetworkConfig {
-    // ═══════════════════════════════════════════════════════════
-    // 📱 ACTIVA LA URL QUE NECESITES (descomenta una línea):
-    // ═══════════════════════════════════════════════════════════
+    // Cambia a la IP actual de tu PC en la misma red del teléfono
+    // Ej.: 192.168.1.82 según tu último mensaje
+    const val BASE_URL = "http://192.168.1.82:9090/api/"
 
-    // 🏠 WiFi - Usa tu IP local cuando estés en la misma red WiFi
-    const val BASE_URL = "http://192.168.1.100:9090/api/"
+    // Ejemplos alternativos (descomenta si los usas):
+    // const val BASE_URL = "http://10.65.206.94:9090/api/"   // Datos móviles
+    // const val BASE_URL = "https://api.milsabores.com/api/" // Producción
 
-    // 📱 Mobile Data - Usa cuando te conectes por datos móviles
-    // const val BASE_URL = "http://10.65.206.94:9090/api/"
-
-    // 🌐 Producción - Servidor en internet
-    // const val BASE_URL = "https://api.milsabores.com/api/"
-
-    // ═══════════════════════════════════════════════════════════
     const val DEBUG = true
 }
 
@@ -37,7 +33,7 @@ interface ApiService {
         @Query("size") size: Int = 12,
         @Query("q") q: String? = null,
         @Query("categoryId") categoryId: Int? = null,
-        @Query("sort") sort: String? = null
+        @Query("sort") sort: String? = null // p.ej. "name" o "-price"
     ): PagedProductsDto
 
     @GET("products/{id}")
@@ -46,6 +42,7 @@ interface ApiService {
 
 object ApiClient {
     val service: ApiService by lazy {
+        // Logger HTTP (solo en debug)
         val logger = HttpLoggingInterceptor().apply {
             level = if (NetworkConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -54,16 +51,23 @@ object ApiClient {
             }
         }
 
+        // OkHttp
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(logger)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .build()
 
+        // Moshi con soporte para Kotlin (reflexión)
+        val moshi = Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+
+        // Retrofit
         Retrofit.Builder()
             .baseUrl(NetworkConfig.BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(MoshiConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(ApiService::class.java)
     }
