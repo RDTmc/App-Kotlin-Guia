@@ -2,11 +2,14 @@ package com.milsabores.appkotlin_guia.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.milsabores.appkotlin_guia.model.Product
+import androidx.lifecycle.viewModelScope
+import com.milsabores.appkotlin_guia.data.remote.ApiClient
+import com.milsabores.appkotlin_guia.data.remote.dto.toDomain
 import com.milsabores.appkotlin_guia.model.CartItem
+import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.ui.util.sizesFor
 import kotlinx.coroutines.flow.update
-
+import kotlinx.coroutines.launch
 
 data class ProductDetailUiState(
     val product: Product? = null,
@@ -30,18 +33,45 @@ class ProductDetailViewModel(
     private val _ui = kotlinx.coroutines.flow.MutableStateFlow(ProductDetailUiState())
     val ui: kotlinx.coroutines.flow.StateFlow<ProductDetailUiState> = _ui
 
+    private val api = ApiClient.service
+    // private val BASE_IMAGE_URL = "http://10.199.140.94:9090/" // si quieres resolver imágenes
+
     /**
-     * Cargar datos desde el catálogo.
+     * Cargar datos desde catálogo; si no está, fallback remoto /products/{id}.
      */
     fun load(productId: String, catalogVm: CatalogViewModel) {
-        val p = catalogVm.getProduct(productId)
-        val sizes = p?.let { sizesFor(it) }.orEmpty()
-        _ui.update {
-            it.copy(
-                product = p,
-                tamanos = sizes,
-                selectedTamano = sizes.firstOrNull()
-            )
+        // 1) Intentamos resolver desde el catálogo actual (memoria)
+        val local = catalogVm.getProduct(productId)
+        if (local != null) {
+            val sizes = sizesFor(local)
+            _ui.update {
+                it.copy(
+                    product = local,
+                    tamanos = sizes,
+                    selectedTamano = sizes.firstOrNull()
+                )
+            }
+            return
+        }
+
+        // 2) Fallback remoto
+        viewModelScope.launch {
+            try {
+                val dto = api.getProductById(productId)
+                // val p = dto.toDomain(BASE_IMAGE_URL)
+                val p = dto.toDomain()
+                val sizes = sizesFor(p)
+                _ui.update {
+                    it.copy(
+                        product = p,
+                        tamanos = sizes,
+                        selectedTamano = sizes.firstOrNull()
+                    )
+                }
+            } catch (e: Exception) {
+                // puedes exponer un error si lo deseas
+                _ui.update { it.copy(mensajeError = "No se pudo cargar el producto") }
+            }
         }
     }
 
@@ -104,7 +134,6 @@ class ProductDetailViewModel(
             flavor = state.selectedSabor,
             quantity = state.qty,
             unitPrice = p.precio
-            // si quisieras guardar el mensaje en el carrito, puedes agregar un campo opcional
         )
     }
 }

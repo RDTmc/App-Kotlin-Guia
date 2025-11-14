@@ -11,8 +11,24 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
-// ⚠️ Reemplaza por la IP local de tu PC
-private const val BASE_URL = "http://10.199.140.94:9090/api/"
+// 🔧 Configuración centralizada
+private object NetworkConfig {
+    // ═══════════════════════════════════════════════════════════
+    // 📱 ACTIVA LA URL QUE NECESITES (descomenta una línea):
+    // ═══════════════════════════════════════════════════════════
+
+    // 🏠 WiFi - Usa tu IP local cuando estés en la misma red WiFi
+    const val BASE_URL = "http://192.168.1.100:9090/api/"
+
+    // 📱 Mobile Data - Usa cuando te conectes por datos móviles
+    // const val BASE_URL = "http://10.65.206.94:9090/api/"
+
+    // 🌐 Producción - Servidor en internet
+    // const val BASE_URL = "https://api.milsabores.com/api/"
+
+    // ═══════════════════════════════════════════════════════════
+    const val DEBUG = true
+}
 
 interface ApiService {
     @GET("products")
@@ -21,7 +37,7 @@ interface ApiService {
         @Query("size") size: Int = 12,
         @Query("q") q: String? = null,
         @Query("categoryId") categoryId: Int? = null,
-        @Query("sort") sort: String? = null // ej: "name" o "-price"
+        @Query("sort") sort: String? = null
     ): PagedProductsDto
 
     @GET("products/{id}")
@@ -31,17 +47,22 @@ interface ApiService {
 object ApiClient {
     val service: ApiService by lazy {
         val logger = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (NetworkConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
-        val ok = OkHttpClient.Builder()
+
+        val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(logger)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .build()
 
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(ok)
+            .baseUrl(NetworkConfig.BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
             .create(ApiService::class.java)

@@ -20,7 +20,29 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // ✅ Define Product Flavors para diferentes redes
+    flavorDimensions += "network"
+    productFlavors {
+        create("wifi") {
+            dimension = "network"
+            applicationIdSuffix = ".wifi"
+            versionNameSuffix = "-wifi"
+        }
+        create("mobile") {
+            dimension = "network"
+            applicationIdSuffix = ".mobile"
+            versionNameSuffix = "-mobile"
+        }
+        create("production") {
+            dimension = "network"
+        }
+    }
+
     buildTypes {
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -29,15 +51,18 @@ android {
             )
         }
     }
+
+    buildFeatures {
+        compose = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
     }
 }
 
@@ -78,17 +103,17 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
 
     // Retrofit + OkHttp
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.3.0")
 
     // Converter JSON (Moshi)
-    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
-    implementation("com.squareup.moshi:moshi:1.15.1")
+    implementation("com.squareup.retrofit2:converter-moshi:3.0.0")
+    implementation("com.squareup.moshi:moshi:1.15.2")
     // (Opcional) Soporte a data classes de Kotlin
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     // (Opcional) Codegen de Moshi si quieres performance (ya tienes KSP):
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
 
 
     testImplementation(libs.junit)
