@@ -1,11 +1,23 @@
 package com.milsabores.appkotlin_guia.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.milsabores.appkotlin_guia.data.remote.ApiClient
+import com.milsabores.appkotlin_guia.data.remote.dto.toDomainList //DTO/mapper
 import com.milsabores.appkotlin_guia.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
 
 class CatalogViewModel : ViewModel() {
+
+    // ⚠️ Si quieres resolver rutas relativas de imagen (img/...) a URL absoluta para device:
+    //    Pasa este base al mapper: dto.toDomainList(BASE_IMAGE_URL)
+    //    y asegúrate de que el backend sirva /img/... en esa misma base.
+    // private val BASE_IMAGE_URL = "http://10.199.140.94:9090/"
+
+    private val api = ApiClient.service
 
     // Seed de productos destacados
     private val destacados: List<Product> = listOf(
@@ -188,24 +200,47 @@ class CatalogViewModel : ViewModel() {
     private val _products = MutableStateFlow(catalogo)
     val products: StateFlow<List<Product>> = _products
 
+    init {
+        // Carga remota inicial (mantiene seeds como fallback)
+        loadRemote()
+    }
+
+    private fun loadRemote() {
+        viewModelScope.launch {
+            try {
+                val page = api.getProducts(page = 0, size = 12)
+                // Si deseas resolver imágenes relativas a URL absoluta, pasa base:
+                // val listaRemota = page.toDomainList(BASE_IMAGE_URL)
+                val listaRemota = page.toDomainList()
+
+                if (listaRemota.isNotEmpty()) {
+                    _products.value = listaRemota
+                    _featured.value = listaRemota.take(3)
+                }
+            } catch (e: Exception) {
+                // Fallback ya está en _products (seeds). Puedes loguear el error si quieres.
+                // Log.e("CatalogViewModel", "Error cargando productos remotos", e)
+            }
+        }
+    }
+
     fun setFilter(f: String?) {
         _filter.value = f
+        val base = _products.value.ifEmpty { catalogo } // filtra sobre lo que haya (remoto o seed)
         _products.value = when (f) {
-            null, "Todos" -> catalogo
+            null, "Todos" -> base
 
-            "Cumpleaños" -> catalogo.filter { item ->
-                // Filtrar por tag o por nombre que contenga 'cumple'
+            "Cumpleaños" -> base.filter { item ->
                 item.nombre.contains("cumple", ignoreCase = true) ||
                         item.tags.any { t -> t.equals("cumpleaños", ignoreCase = true) }
             }
 
-            "Bodas" -> catalogo.filter { item ->
-                // Filtrar por tag o por nombre que contenga 'boda'
+            "Bodas" -> base.filter { item ->
                 item.nombre.contains("boda", ignoreCase = true) ||
                         item.tags.any { t -> t.equals("boda", ignoreCase = true) }
             }
 
-            "Sin azúcar"  -> catalogo.filter { item ->
+            "Sin azúcar" -> base.filter { item ->
                 item.categoria.equals("Sin Azúcar", ignoreCase = true) ||
                         item.tags.any { t ->
                             t.equals("sin azúcar", ignoreCase = true) ||
@@ -213,21 +248,29 @@ class CatalogViewModel : ViewModel() {
                         }
             }
 
-            "Vegano" -> catalogo.filter { item ->
+            "Vegano" -> base.filter { item ->
                 item.categoria.equals("Vegano", ignoreCase = true) ||
                         item.tags.any { t -> t.equals("vegano", ignoreCase = true) }
             }
 
-            else -> catalogo
+            else -> base
         }
     }
 
-    /** Producto por id (incluye destacados) */
+    /** Producto por id (consulta sobre lista actual y destacados) */
     fun getProduct(id: String): Product? =
-        (catalogo + destacados).firstOrNull { it.id == id }
+        (_products.value.ifEmpty { catalogo } + destacados).firstOrNull { it.id == id }
 
-    /** Similares por categoría o tags, desde el catálogo completo */
-    fun getSimilar(to: Product, limit: Int = 10): List<Product> =
-        catalogo.filter { it.id != to.id && (it.categoria == to.categoria || it.tags.any { t -> to.tags.contains(t) }) }
+    /** Similares por categoría o tags, desde la lista actual (o seed) */
+    fun getSimilar(to: Product, limit: Int = 10): List<Product> {
+        val base = _products.value.ifEmpty { catalogo }
+        return base.filter {
+            it.id != to.id && (it.categoria == to.categoria || it.tags.any { t ->
+                to.tags.contains(
+                    t
+                )
+            })
+        }
             .take(limit)
+    }
 }
