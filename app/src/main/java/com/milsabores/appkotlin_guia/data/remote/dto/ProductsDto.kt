@@ -1,33 +1,39 @@
 package com.milsabores.appkotlin_guia.data.remote.dto
 
 import com.milsabores.appkotlin_guia.model.Product
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class PagedProductsDto(
-    val items: List<ProductDto>,
-    val page: Int,
-    val size: Int,
-    val totalItems: Int,
-    val totalPages: Int,
-    val hasNext: Boolean
+    @Json(name = "items") val items: List<ProductDto>,
+    @Json(name = "page") val page: Int,
+    @Json(name = "size") val size: Int,
+    @Json(name = "totalItems") val totalItems: Int,
+    @Json(name = "totalPages") val totalPages: Int,
+    @Json(name = "hasNext") val hasNext: Boolean
 )
 
+@JsonClass(generateAdapter = true)
 data class ProductDto(
-    val id: String,
-    val categoryId: Int?,
-    val name: String,
-    val price: Int,
-    val imagePath: String?,
-    val description: String?,
-    val tags: List<String>?,
-    val sizes: List<String>?
+    @Json(name = "id") val id: String,
+    @Json(name = "categoryId") val categoryId: Int?,
+    @Json(name = "name") val name: String,
+    @Json(name = "price") val price: Int,
+    @Json(name = "imagePath") val imagePath: String?,
+    @Json(name = "description") val description: String?,
+    @Json(name = "tags") val tags: List<String>?,
+    @Json(name = "sizes") val sizes: List<String>?
 )
 
 /** Mapper: API → Dominio (en español) */
 fun ProductDto.toDomain(baseImageUrl: String? = null): Product {
-    // Si tu backend sirve imágenes relativas (img/...), puedes prefijar una base:
-    // val img = if (!imagePath.isNullOrBlank() && !imagePath.startsWith("http"))
-    //              "${baseImageUrl ?: ""}${imagePath}"
-    //           else imagePath.orEmpty()
+    // Si quisieras prefijar URL absolutas para imágenes relativas (img/...):
+    // val img = when {
+    //     imagePath.isNullOrBlank() -> ""
+    //     imagePath.startsWith("http", ignoreCase = true) -> imagePath
+    //     else -> "${baseImageUrl.orEmpty()}${if (baseImageUrl?.endsWith('/') == true) "" else "/"}$imagePath"
+    // }
     val img = imagePath.orEmpty()
 
     return Product(
@@ -42,6 +48,6 @@ fun ProductDto.toDomain(baseImageUrl: String? = null): Product {
     )
 }
 
-/** Saca directamente la lista de dominio desde la página  */
+/** Saca directamente la lista de dominio desde la página */
 fun PagedProductsDto.toDomainList(baseImageUrl: String? = null): List<Product> =
     items.map { it.toDomain(baseImageUrl) }

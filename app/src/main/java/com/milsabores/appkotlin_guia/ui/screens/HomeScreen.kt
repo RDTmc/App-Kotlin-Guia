@@ -1,46 +1,20 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
-import android.R
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.*
+import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
 import androidx.compose.runtime.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -48,9 +22,9 @@ import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.components.BottomDest
 import com.milsabores.appkotlin_guia.ui.components.BottomNavBar
+import com.milsabores.appkotlin_guia.ui.components.FilterChipsRow
 import com.milsabores.appkotlin_guia.ui.components.ProductCard
 import com.milsabores.appkotlin_guia.ui.components.TopCarrusel
-import com.milsabores.appkotlin_guia.ui.components.FilterChipsRow
 import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
 import com.milsabores.appkotlin_guia.ui.theme.Chocolate
 import com.milsabores.appkotlin_guia.ui.theme.Pacifico
@@ -68,15 +42,23 @@ fun HomeScreen(
     cartVm: CartViewModel,
     catalogVm: CatalogViewModel,
     isLoggedIn: Boolean
-
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val featured by catalogVm.featured.collectAsState()
-    val filter by catalogVm.filter.collectAsState()
-    val products by catalogVm.products.collectAsState()
+
+    // 👇 Nuevo: un solo estado unificado desde el VM
+    val ui by catalogVm.ui.collectAsState()
+
+    // Carrito
     val cartUi by cartVm.ui.collectAsState()
     val cartCount = cartUi.items.sumOf { it.quantity }
+
+    // Carga inicial si no hay productos aún
+    LaunchedEffect(Unit) {
+        if (catalogVm.ui.value.products.isEmpty()) {
+            catalogVm.loadFromApi()
+        }
+    }
 
     var bottomSel by remember { mutableStateOf(BottomDest.HOME) }
 
@@ -93,29 +75,25 @@ fun HomeScreen(
                         viewModel.navigateTo(AppRoute.Profile)
                     }
                 )
-
             }
         }
-    )   {
+    ) {
         Scaffold(
-
             containerColor = BlancoDos,
             topBar = {
-                // 💡 CAMBIO A CENTERED TOP APP BAR
                 CenterAlignedTopAppBar(
                     title = {
-                        // 💡 Título Centrado con Fuente Pacifico
                         Text(
                             "Mil Sabores",
                             style = TextStyle(
                                 fontFamily = Pacifico,
-                                fontSize = 32.sp, // Fuente más grande para destacar
-                                color = Chocolate   // Letras en Rosa Suave
+                                fontSize = 32.sp,
+                                color = Chocolate
                             ),
                             textAlign = TextAlign.Center
                         )
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors( // Usamos los defaults centrados
+                    colors = centerAlignedTopAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,
                         titleContentColor = RosaText,
@@ -126,11 +104,9 @@ fun HomeScreen(
                             Icon(Icons.Default.Menu, contentDescription = "Menú")
                         }
                     },
-                    // 💡 Ícono de Acción (Ejemplo: Ícono de Búsqueda o Carrito)
                     actions = {
-                        IconButton(onClick = { /* Abre la búsqueda en pantalla completa */ }) {
-                            Icon(Icons.Filled.Cake, contentDescription = "Torta",
-                                tint = Chocolate)
+                        IconButton(onClick = { /* abrir búsqueda */ }) {
+                            Icon(Icons.Filled.Cake, contentDescription = "Torta", tint = Chocolate)
                         }
                     }
                 )
@@ -151,44 +127,63 @@ fun HomeScreen(
                     }
                 )
             }
-          ) { innerPadding ->
-              Column(
-                  modifier = Modifier
-                      .padding(
-                          top = innerPadding.calculateTopPadding(),
-                          bottom = 0.dp  // ← Elimina el padding bottom automático
-                      )
-                      .fillMaxSize()
-              ) {
-
-
-                // Carrusel
-                TopCarrusel(
-                    items = featured.take(3),
-                    onSeeMore = { catalogVm.setFilter(null) }, // "Ver todos" rápido
-                    onOpenProduct = { p -> openProduct(navController, p) }
-                )
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = 0.dp
+                    )
+                    .fillMaxSize()
+            ) {
+                // Carrusel (usa ui.featured)
+                if (ui.featured.isNotEmpty()) {
+                    TopCarrusel(
+                        items = ui.featured.take(3),
+                        onSeeMore = { catalogVm.setFilter(null) },
+                        onOpenProduct = { p -> openProduct(navController, p) }
+                    )
+                }
 
                 Spacer(Modifier.height(8.dp))
 
-                // Filtros
+                // Filtros (usa ui.filter)
                 FilterChipsRow(
-                    selected = filter,
+                    selected = ui.filter,
                     onSelected = { f -> catalogVm.setFilter(f) }
                 )
 
-                // Grilla
+                // Estado de carga / error (opcional visual)
+                when {
+                    ui.isLoading -> {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+                    ui.error != null -> {
+                        Text(
+                            text = ui.error ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
+                // Grilla (usa ui.products)
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(
-                        start = 20.dp,end = 20.dp,
-                        top = 20.dp,bottom = 85.dp
+                        start = 20.dp, end = 20.dp,
+                        top = 20.dp, bottom = 85.dp
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(products) { p ->
+                    items(ui.products) { p ->
                         ProductCard(product = p, onOpen = { openProduct(navController, it) })
                     }
                 }
