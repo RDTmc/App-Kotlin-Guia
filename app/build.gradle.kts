@@ -20,29 +20,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // ✅ Define Product Flavors para diferentes redes
-    flavorDimensions += "network"
-    productFlavors {
-        create("wifi") {
-            dimension = "network"
-            applicationIdSuffix = ".wifi"
-            versionNameSuffix = "-wifi"
-        }
-        create("mobile") {
-            dimension = "network"
-            applicationIdSuffix = ".mobile"
-            versionNameSuffix = "-mobile"
-        }
-        create("production") {
-            dimension = "network"
-        }
-    }
-
     buildTypes {
-        debug {
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-        }
+        debug { isDebuggable = true }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -52,30 +31,29 @@ android {
         }
     }
 
-    buildFeatures {
-        compose = true
-    }
-
+    // ✅ Usa el nuevo DSL (evita el warning de jvmTarget deprecated)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            // import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
+
+    buildFeatures { compose = true }
 }
 
 dependencies {
-
     implementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.compose.foundation:foundation")
-
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.core.ktx)
@@ -90,37 +68,28 @@ dependencies {
 
     implementation(libs.coil.compose)
 
+    // Room + KSP
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.foundation.layout)
-    implementation(libs.androidx.compose.animation.core)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.media3.test.utils)
+    implementation(libs.androidx.compose.material3.window.size.class1)
     ksp(libs.androidx.room.compiler)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
-
-    // Retrofit + OkHttp
+    // Retrofit + OkHttp (versiones estables correctas)
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-moshi:3.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.3.0")
     implementation("com.squareup.okhttp3:logging-interceptor:5.3.0")
 
-    // Converter JSON (Moshi)
-    implementation("com.squareup.retrofit2:converter-moshi:3.0.0")
+    // Moshi
     implementation("com.squareup.moshi:moshi:1.15.2")
-    // (Opcional) Soporte a data classes de Kotlin
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
-    // (Opcional) Codegen de Moshi si quieres performance (ya tienes KSP):
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
 
-
+    // Test
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)          // = androidx.test.ext:junit:1.2.1
+    androidTestImplementation(libs.androidx.espresso.core)  // = espresso:3.6.1
+
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
