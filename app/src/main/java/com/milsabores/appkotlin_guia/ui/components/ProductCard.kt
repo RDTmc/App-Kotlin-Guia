@@ -132,13 +132,13 @@ fun ProductCard(
                 verticalArrangement = Arrangement.Top
             ) {
                 Column {
-                    Text(
+                    /** Text(
                         text = product.categoria,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-                    )
+                    )*/
 
                     Text(
                         text = product.nombre,

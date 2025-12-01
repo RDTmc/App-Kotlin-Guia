@@ -46,7 +46,7 @@ fun HomeScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // 👇 Nuevo: un solo estado unificado desde el VM
+    // Nuevo: un solo estado unificado desde el VM
     val ui by catalogVm.ui.collectAsState()
 
     // Carrito
