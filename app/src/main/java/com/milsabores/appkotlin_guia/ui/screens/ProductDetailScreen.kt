@@ -10,30 +10,28 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ShoppingBasket
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +44,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-// import androidx.media3.test.utils.Action
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.milsabores.appkotlin_guia.model.CartItem
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
@@ -106,7 +105,9 @@ fun ProductDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate(AppRoute.Cart.route) }) {
-                        BadgedBox(badge = { if (cartCount > 0) Badge { Text("$cartCount") } }) {
+                        BadgedBox(badge = {
+                            if (cartCount > 0) Badge { Text("$cartCount") }
+                        }) {
                             Icon(Icons.Filled.ShoppingBasket, contentDescription = "Carrito")
                         }
                     }
@@ -146,7 +147,10 @@ fun ProductDetailScreen(
                         modifier = Modifier
                             .size(20.dp)
                             .alpha(alpha)
-                            .background(RosaClaroDos, shape = androidx.compose.material3.MaterialTheme.shapes.small)
+                            .background(
+                                RosaClaroDos,
+                                shape = androidx.compose.material3.MaterialTheme.shapes.small
+                            )
                     )
 
                     OutlinedButton(
@@ -198,7 +202,10 @@ fun ProductDetailScreen(
                         ),
                         modifier = Modifier.height(46.dp)
                     ) {
-                        Text(addedLabel("Agregar al carrito", showAddedLabel, lastAddedQty), fontWeight = FontWeight.Bold)
+                        Text(
+                            addedLabel("Agregar al carrito", showAddedLabel, lastAddedQty),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -217,6 +224,10 @@ fun ProductDetailScreen(
             return@Scaffold
         }
 
+        val isRemoteImage = remember(p.imagen) {
+            p.imagen.startsWith("http", ignoreCase = true)
+        }
+
         Column(
             modifier = Modifier
                 .padding(pv)
@@ -224,17 +235,19 @@ fun ProductDetailScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Imagen grande con zoom
-            val res = resIdFor(ctx, p.imagen ?: "")
+            // Imagen grande con soporte para URL (Supabase) o drawable local
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (res != 0) {
-                    Image(
-                        painter = painterResource(res),
+                if (isRemoteImage) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(ctx)
+                            .data(p.imagen)
+                            .crossfade(true)
+                            .build(),
                         contentDescription = p.nombre,
                         modifier = Modifier
                             .fillMaxSize()
@@ -243,7 +256,20 @@ fun ProductDetailScreen(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Text("Sin imagen", color = TextoPrincipal)
+                    val res = resIdFor(ctx, p.imagen)
+                    if (res != 0) {
+                        Image(
+                            painter = painterResource(res),
+                            contentDescription = p.nombre,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { vm.setZoom(true) },
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text("Sin imagen", color = TextoPrincipal)
+                    }
                 }
             }
 
@@ -284,23 +310,40 @@ fun ProductDetailScreen(
                     )
                 }
             }
-
         }
 
-        // Modal de zoom
+        // Modal de zoom con soporte URL/drawable
         if (ui.showZoom && ui.product != null) {
-            val zoomRes = resIdFor(ctx, ui.product!!.imagen ?: "")
+            val zoomIsRemote = ui.product!!.imagen.startsWith("http", ignoreCase = true)
+            val zoomRes = if (!zoomIsRemote) resIdFor(ctx, ui.product!!.imagen) else 0
+
             AlertDialog(
                 onDismissRequest = { vm.setZoom(false) },
                 confirmButton = {},
                 text = {
-                    if (zoomRes != 0) {
-                        Image(
-                            painter = painterResource(zoomRes),
-                            contentDescription = ui.product!!.nombre,
-                            modifier = Modifier.fillMaxWidth(),
-                            contentScale = ContentScale.Fit
-                        )
+                    when {
+                        zoomIsRemote -> {
+                            AsyncImage(
+                                model = ImageRequest.Builder(ctx)
+                                    .data(ui.product!!.imagen)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = ui.product!!.nombre,
+                                modifier = Modifier.fillMaxWidth(),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        zoomRes != 0 -> {
+                            Image(
+                                painter = painterResource(zoomRes),
+                                contentDescription = ui.product!!.nombre,
+                                modifier = Modifier.fillMaxWidth(),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        else -> {
+                            Text("Sin imagen", color = TextoPrincipal)
+                        }
                     }
                 }
             )
