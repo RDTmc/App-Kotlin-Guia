@@ -1,6 +1,5 @@
 package com.milsabores.appkotlin_guia.ui.components
 
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -12,21 +11,21 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.milsabores.appkotlin_guia.model.Product
 import com.milsabores.appkotlin_guia.ui.theme.BlancoMarfil
-import com.milsabores.appkotlin_guia.ui.theme.Chocolate
-import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 import com.milsabores.appkotlin_guia.ui.theme.RosaFuerteDos
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 
@@ -43,10 +42,10 @@ fun TopCarrusel(
         fontWeight = FontWeight.Black,
         color = Color.White, // Texto en blanco para alto contraste
         fontSize = 20.sp,
-        shadow = androidx.compose.ui.graphics.Shadow( // Efecto de sombra para el relieve
-            color = Color.Black.copy(alpha = 0.8f), // Sombra oscura
-            offset = Offset(2f, 2f), // Desplazamiento
-            blurRadius = 4f // Suavizado
+        shadow = androidx.compose.ui.graphics.Shadow(
+            color = Color.Black.copy(alpha = 0.8f),
+            offset = Offset(2f, 2f),
+            blurRadius = 4f
         )
     )
 
@@ -57,6 +56,11 @@ fun TopCarrusel(
             .height(220.dp)
     ) { page ->
         val p = items.getOrNull(page) ?: return@HorizontalPager
+
+        val isRemoteImage = remember(p.imagen) {
+            p.imagen.startsWith("http", ignoreCase = true)
+        }
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -65,14 +69,29 @@ fun TopCarrusel(
             colors = CardDefaults.cardColors(containerColor = BlancoMarfil)
         ) {
             Box(Modifier.fillMaxSize()) {
-                val res = resIdFor(ctx, p.imagen)
-                if (res != 0) {
-                    Image(
-                        painter = painterResource(res),
-                        contentDescription = p.nombre,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                when {
+                    isRemoteImage -> {
+                        AsyncImage(
+                            model = ImageRequest.Builder(ctx)
+                                .data(p.imagen)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = p.nombre,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    else -> {
+                        val res = resIdFor(ctx, p.imagen)
+                        if (res != 0) {
+                            Image(
+                                painter = painterResource(res),
+                                contentDescription = p.nombre,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
 
                 Column(
