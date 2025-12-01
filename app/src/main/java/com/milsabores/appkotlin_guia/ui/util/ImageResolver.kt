@@ -5,6 +5,11 @@ import android.content.Context
 fun resIdFor(context: Context, assetPath: String?): Int {
     if (assetPath.isNullOrBlank()) return 0
 
+    // ⬅️ NUEVO: si es una URL remota (Supabase, http/https), no buscamos drawable
+    if (assetPath.startsWith("http", ignoreCase = true)) {
+        return 0
+    }
+
     val name = assetPath
         .substringAfterLast('/')   // img/tt_vainilla.png -> tt_vainilla.png
         .substringBeforeLast('.')  // tt_vainilla.png -> tt_vainilla
@@ -13,5 +18,3 @@ fun resIdFor(context: Context, assetPath: String?): Int {
 
     return context.resources.getIdentifier(name, "drawable", context.packageName)
 }
-
-
