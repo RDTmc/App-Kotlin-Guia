@@ -23,12 +23,15 @@ class EstadoDataStore(private val context: Context) {
     private val KEY_GUEST_MODE      = booleanPreferencesKey("guest_mode")
     private val KEY_IS_LOGGED_IN    = booleanPreferencesKey("is_logged_in")
     private val KEY_USER_EMAIL      = stringPreferencesKey("user_email")
+    // token JWT
+    private val KEY_AUTH_TOKEN      = stringPreferencesKey("auth_token")
 
     // Lecturas
     val onboardingDone: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_DONE] ?: false }
     val guestMode: Flow<Boolean>      = context.dataStore.data.map { it[KEY_GUEST_MODE] ?: false }
     val isLoggedIn: Flow<Boolean>     = context.dataStore.data.map { it[KEY_IS_LOGGED_IN] ?: false }
     val userEmail: Flow<String?>      = context.dataStore.data.map { it[KEY_USER_EMAIL] }
+    val authToken: Flow<String?>      = context.dataStore.data.map { it[KEY_AUTH_TOKEN] }
 
     // Escrituras
     suspend fun setOnboardingDone(done: Boolean) {
@@ -51,6 +54,14 @@ class EstadoDataStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             if (email.isNullOrBlank()) prefs.remove(KEY_USER_EMAIL)
             else prefs[KEY_USER_EMAIL] = email
+        }
+    }
+
+    // Guardar / limpiar token
+    suspend fun setAuthToken(token: String?) {
+        context.dataStore.edit { prefs ->
+            if (token.isNullOrBlank()) prefs.remove(KEY_AUTH_TOKEN)
+            else prefs[KEY_AUTH_TOKEN] = token
         }
     }
 

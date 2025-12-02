@@ -14,11 +14,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.first
+import com.milsabores.appkotlin_guia.data.remote.AuthRemoteRepository
+import com.milsabores.appkotlin_guia.data.remote.AuthSession
+
 
 class UsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repo con contexto de aplicación
     private val repo: UsuarioRepository = UsuarioRepository.get(application)
+
+    // Repo remoto para ms-usuarios
+    private val authRemote = AuthRemoteRepository()
 
     // Declaramos el estado interno mutable
     private val _estado = MutableStateFlow(UsuarioUiState())
@@ -200,5 +206,65 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
         return true
     }
 
+    /** Login contra ms-usuarios (backend remoto). */
+    fun loginRemoto(
+        correo: String,
+        contrasena: String,
+        onResult: (Boolean, AuthSession?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val session = authRemote.login(email = correo, password = contrasena)
+                val remoteUser = session.user
 
+                // Actualizamos el estado de perfil con los datos remotos
+                _estado.update { st ->
+                    st.copy(
+                        nombre = remoteUser.fullName ?: st.nombre,
+                        correo = remoteUser.email ?: correo,
+                        direccion = remoteUser.address ?: st.direccion
+                    )
+                }
+
+                onResult(true, session)
+            } catch (e: Exception) {
+                onResult(false, null)
+            }
+        }
+    }
+
+    /** Registro contra ms-usuarios (backend remoto). */
+    fun registrarRemoto(onResult: (Boolean, String?) -> Unit) {
+        val estadoActual = _estado.value
+        if (!estaValidadoElFormulario() || !estadoActual.aceptaTerminos) {
+            onResult(false, "Revisa los campos y acepta los términos")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val session = authRemote.register(
+                    fullName = estadoActual.nombre,
+                    email = estadoActual.correo,
+                    password = estadoActual.contrasena,
+                    phone = null, // si luego agregas teléfono en el formulario, pásalo aquí
+                    address = estadoActual.direccion
+                )
+
+                // (Opcional) Guardar también en Room para que UsuariosListScreen no quede vacío
+                repo.crear(
+                    Users(
+                        nombre = estadoActual.nombre,
+                        correo = estadoActual.correo,
+                        contrasena = estadoActual.contrasena,
+                        direccion = estadoActual.direccion
+                    )
+                )
+
+                onResult(true, null)
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Error al registrar")
+            }
+        }
+    }
 }
