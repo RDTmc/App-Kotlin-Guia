@@ -107,13 +107,18 @@ fun LoginScreen(
                         error = "Completa tus credenciales"
                         return@Button
                     }
-                    // login real usando tu VM
-                    usuarioVm.login(email, pass) { ok, user ->
-                        if (ok && user != null) {
+
+                    // 🔄 Login real contra ms-usuarios
+                    usuarioVm.loginRemoto(email, pass) { ok, session ->
+                        if (ok && session != null) {
+                            val remoteUser = session.user
+                            val token = session.token
+
                             scope.launch {
                                 prefs.setGuestMode(false)
                                 prefs.setLoggedIn(true)
-                                prefs.setUserEmail(user.correo)
+                                prefs.setUserEmail(remoteUser.email ?: email)
+                                prefs.setAuthToken(token)
                             }
 
                             navController.navigate(AppRoute.Home.route) {
@@ -135,6 +140,7 @@ fun LoginScreen(
             ) {
                 Text("Ingresar", fontWeight = FontWeight.SemiBold)
             }
+
 
             TextButton(
                 onClick = { navController.navigate(AppRoute.Register.route) },

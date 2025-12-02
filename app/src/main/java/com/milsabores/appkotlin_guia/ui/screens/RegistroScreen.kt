@@ -169,13 +169,16 @@ fun RegistroScreen(
             Button(
                 onClick = {
                     if (viewModel.estaValidadoElFormulario() && estado.aceptaTerminos) {
-                        viewModel.registrarEnDB {
+                        viewModel.registrarRemoto { ok, msg ->
                             scope.launch {
-                                snackbarHostState.showSnackbar("Usuario guardado")
-                                delay(500)
-                                // 👇 ir al carrito después de registrar
-                                navController.navigate(AppRoute.Cart.route) {
-                                    popUpTo(AppRoute.Register.route) { inclusive = true }
+                                if (ok) {
+                                    snackbarHostState.showSnackbar("Usuario registrado")
+                                    delay(500)
+                                    navController.navigate(AppRoute.Cart.route) {
+                                        popUpTo(AppRoute.Register.route) { inclusive = true }
+                                    }
+                                } else {
+                                    snackbarHostState.showSnackbar(msg ?: "No se pudo registrar el usuario")
                                 }
                             }
                         }
@@ -189,6 +192,7 @@ fun RegistroScreen(
             ) {
                 Text("Registrar", fontWeight = FontWeight.SemiBold)
             }
+
         }
     }
 }
