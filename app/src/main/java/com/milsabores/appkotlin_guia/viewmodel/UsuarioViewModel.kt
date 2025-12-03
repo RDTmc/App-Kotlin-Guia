@@ -14,11 +14,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.first
+import com.milsabores.appkotlin_guia.data.remote.AuthRemoteRepository
+import com.milsabores.appkotlin_guia.data.remote.dto.AuthSession
+
+import retrofit2.HttpException
+
+
 
 class UsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repo con contexto de aplicación
     private val repo: UsuarioRepository = UsuarioRepository.get(application)
+
+    // Repo remoto para ms-usuarios
+    private val authRemote = AuthRemoteRepository()
 
     // Declaramos el estado interno mutable
     private val _estado = MutableStateFlow(UsuarioUiState())
@@ -103,7 +112,7 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
                     contrasena = estadoActual.contrasena,
                     direccion = estadoActual.direccion,
 
-                )
+                    )
             )
             onSuccess?.invoke()
 
@@ -190,15 +199,93 @@ class UsuarioViewModel(application: Application) : AndroidViewModel(application)
 
     suspend fun cambiarPassword(actual: String, nueva: String, confirmar: String): Boolean {
         val hasUpper = nueva.any { it.isUpperCase() }
-        val hasNum   = nueva.any { it.isDigit() }
+        val hasNum = nueva.any { it.isDigit() }
         if (nueva.length < 8 || !hasUpper || !hasNum || nueva != confirmar) return false
 
         val correo = estado.value.correo
-        val user   = repo.porCredenciales(correo, actual) ?: return false  //
+        val user = repo.porCredenciales(correo, actual) ?: return false  //
 
         repo.actualizarPasswordPorCorreo(correo, nueva)
         return true
     }
 
+    /** Login contra ms-usuarios (backend remoto). */
+    fun loginRemoto(
+        correo: String,
+        contrasena: String,
+        onResult: (Boolean, AuthSession?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val emailTrim = correo.trim()
+            val passTrim = contrasena.trim()
 
+            try {
+                val session = authRemote.login(email = emailTrim, password = passTrim)
+                val remoteUser = session.user
+
+                // Actualizamos el estado UI con los datos remotos
+                _estado.update { st ->
+                    st.copy(
+                        nombre = remoteUser.fullName ?: st.nombre,
+                        correo = remoteUser.email ?: emailTrim,
+                        direccion = remoteUser.address ?: st.direccion,
+                        errores = UsuarioErrores()
+                    )
+                }
+
+                onResult(true, session)
+            } catch (e: HttpException) {
+                // 401/403 -> credenciales malas
+                onResult(false, null)
+            } catch (e: Exception) {
+                // error de red / backend
+                onResult(false, null)
+            }
+        }
+    }
+
+
+    /** Registro contra ms-usuarios (backend remoto). */
+    fun registrarRemoto(onResult: (Boolean, String?) -> Unit) {
+        val estadoActual = _estado.value
+        if (!estaValidadoElFormulario() || !estadoActual.aceptaTerminos) {
+            onResult(false, "Revisa los campos y acepta los términos")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                // 1) Registro remoto en ms-usuarios
+                authRemote.register(
+                    fullName = estadoActual.nombre,
+                    email = estadoActual.correo,
+                    password = estadoActual.contrasena,
+                    phone = null,
+                    address = estadoActual.direccion
+                )
+
+                // 2) (Opcional) guardar espejo local en Room para tu lista
+                repo.crear(
+                    Users(
+                        nombre = estadoActual.nombre,
+                        correo = estadoActual.correo,
+                        contrasena = estadoActual.contrasena,
+                        direccion = estadoActual.direccion
+                    )
+                )
+
+                onResult(true, null)
+
+            } catch (e: HttpException) {
+                val msg = when (e.code()) {
+                    409 -> "Este correo ya está registrado. Intenta iniciar sesión."
+                    400 -> "Datos inválidos. Revisa correo y contraseña."
+                    else -> "Error (${e.code()}): ${e.message()}"
+                }
+                onResult(false, msg)
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Error de red al registrar. Intenta de nuevo.")
+            }
+        }
+    }
 }

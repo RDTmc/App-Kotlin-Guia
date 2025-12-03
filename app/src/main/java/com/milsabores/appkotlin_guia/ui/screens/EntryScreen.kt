@@ -1,5 +1,6 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,8 @@ import com.milsabores.appkotlin_guia.ui.theme.Rosa
 import com.milsabores.appkotlin_guia.ui.theme.RosaText
 import com.milsabores.appkotlin_guia.ui.theme.Vainilla
 import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
+import com.milsabores.appkotlin_guia.ui.util.resIdFor
+import coil.compose.AsyncImage
 
 @Composable
 fun EntryScreen(
@@ -52,11 +58,11 @@ fun EntryScreen(
         }
     }
 
-    if (isLogged) {
+    /** if (isLogged) {
         // Si el usuario tiene sesión → a Home
         LaunchedEffect(Unit) { onGuestClick() }
         return
-    }
+    } */
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -235,22 +241,84 @@ fun EntryScreen(
 
 @Composable
 private fun DemoProductRow(product: Product) {
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(
-            text = product.nombre,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            )
-        )
-        Text(
-            text = "Precio: $${product.precio}",
-            style = MaterialTheme.typography.bodySmall
-        )
-        if (product.descripcion.isNotBlank()) {
+    val ctx = LocalContext.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 🖼 Imagen (URL Supabase o drawable local)
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+        ) {
+            when {
+                // Caso 1: URL absoluta (Supabase)
+                product.imagen.startsWith("http", ignoreCase = true) -> {
+                    AsyncImage(
+                        model = product.imagen,
+                        contentDescription = product.nombre,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                // Caso 2: ruta tipo "img/tt_vainilla.png" → drawable
+                product.imagen.isNotBlank() -> {
+                    val resId = resIdFor(ctx, product.imagen)
+                    if (resId != 0) {
+                        Image(
+                            painter = painterResource(resId),
+                            contentDescription = product.nombre,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("IMG")
+                        }
+                    }
+                }
+
+                // Fallback sin imagen
+                else -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("IMG")
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        // Texto del producto
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
-                text = product.descripcion,
+                text = product.nombre,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+            Text(
+                text = "Precio: $${product.precio}",
                 style = MaterialTheme.typography.bodySmall
             )
+            if (product.descripcion.isNotBlank()) {
+                Text(
+                    text = product.descripcion,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }

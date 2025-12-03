@@ -1,1 +1,7 @@
 /build
+
+# Carpeta de builds firmados / APK de release
+release/
+debug/
+*.apk
+
