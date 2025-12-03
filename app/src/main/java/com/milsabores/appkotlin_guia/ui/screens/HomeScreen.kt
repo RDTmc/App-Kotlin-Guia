@@ -67,12 +67,25 @@ fun HomeScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Text("Menu", Modifier.padding(16.dp))
+
+                // Opción: Ir al Perfil
                 NavigationDrawerItem(
                     label = { Text("Ir al Perfil") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
                         viewModel.navigateTo(AppRoute.Profile)
+                    }
+                )
+
+                // Ir a la API externa de postres
+                NavigationDrawerItem(
+                    label = { Text("Postres desde API externa") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        // Navega a la pantalla DemoApiScreen
+                        viewModel.navigateTo(AppRoute.DemoApi)
                     }
                 )
             }

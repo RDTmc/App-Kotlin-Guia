@@ -21,8 +21,7 @@ sealed class AppRoute(val route:String) {
     data object Checkout   : AppRoute("checkout")
     data object CheckoutSuccess : AppRoute("checkout_success")
 
-
-
+    data object DemoApi : AppRoute("demo_api")
 
 
 

@@ -5,7 +5,7 @@ import android.content.Context
 fun resIdFor(context: Context, assetPath: String?): Int {
     if (assetPath.isNullOrBlank()) return 0
 
-    // ⬅️ NUEVO: si es una URL remota (Supabase, http/https), no buscamos drawable
+    // NUEVO: si es una URL remota (Supabase, http/https), no buscamos drawable
     if (assetPath.startsWith("http", ignoreCase = true)) {
         return 0
     }

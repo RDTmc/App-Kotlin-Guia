@@ -25,20 +25,20 @@ fun MenuScreen(
     navController: NavController,
     catalogVm: CatalogViewModel = viewModel()
 ) {
-    // 👇 un solo estado unificado desde el VM
+    // Un solo estado unificado desde el VM
     val ui by catalogVm.ui.collectAsState()
 
-    // 🔁 asegúrate de tener datos si se entra directo a esta pantalla
+    // asegúrate de tener datos si se entra directo a esta pantalla
     LaunchedEffect(Unit) {
         if (catalogVm.ui.value.products.isEmpty()) {
             catalogVm.loadFromApi()
         }
     }
 
-    // 🔎 búsqueda local
+    // búsqueda local
     var searchText by remember { mutableStateOf("") }
 
-    // 🧮 aplicamos búsqueda sobre la lista ya filtrada por VM
+    // aplicamos búsqueda sobre la lista ya filtrada por VM
     val displayedProducts = remember(ui.products, searchText) {
         if (searchText.isBlank()) ui.products
         else ui.products.filter { it.nombre.contains(searchText, ignoreCase = true) }
@@ -83,6 +83,27 @@ fun MenuScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     colors = textFieldColors
                 )
+            }
+
+            // 1.5) Botón para ir a la API externa de postres
+            item {
+                Button(
+                    onClick = {
+                        navController.navigate(AppRoute.DemoApi.route)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Chocolate,
+                        contentColor = BlancoDos
+                    )
+                ) {
+                    Text(
+                        text = "Ver postres desde API externa",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             // 2) Filtros (usa el filtro del VM)
