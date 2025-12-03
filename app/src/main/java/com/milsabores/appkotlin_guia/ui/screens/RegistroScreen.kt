@@ -14,6 +14,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -22,9 +27,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -51,6 +59,7 @@ fun RegistroScreen(
     val estado by viewModel.estado.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -113,7 +122,17 @@ fun RegistroScreen(
                 onValueChange = viewModel::onContrasenaChange,
                 label = { Text("Contraseña") },
                 isError = estado.errores.contrasena != null,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible)
+                    VisualTransformation.None
+                else
+                    PasswordVisualTransformation(),
+                trailingIcon = {
+                    val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                    val desc = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(icon, contentDescription = desc, tint = Chocolate)
+                    }
+                },
                 supportingText = {
                     estado.errores.contrasena?.let {
                         Text(it, color = MaterialTheme.colorScheme.error)
@@ -129,6 +148,7 @@ fun RegistroScreen(
                     focusedContainerColor = Color.White
                 )
             )
+
 
             OutlinedTextField(
                 value = estado.direccion,
@@ -169,13 +189,17 @@ fun RegistroScreen(
             Button(
                 onClick = {
                     if (viewModel.estaValidadoElFormulario() && estado.aceptaTerminos) {
-                        viewModel.registrarEnDB {
+                        viewModel.registrarRemoto { ok, msg ->
                             scope.launch {
-                                snackbarHostState.showSnackbar("Usuario guardado")
-                                delay(500)
-                                // 👇 ir al carrito después de registrar
-                                navController.navigate(AppRoute.Cart.route) {
-                                    popUpTo(AppRoute.Register.route) { inclusive = true }
+                                if (ok) {
+                                    snackbarHostState.showSnackbar("Usuario registrado")
+                                    kotlinx.coroutines.delay(500)
+                                    // Después de registrar, vamos al LOGIN
+                                    navController.navigate(AppRoute.Login.route) {
+                                        popUpTo(AppRoute.Register.route) { inclusive = true }
+                                    }
+                                } else {
+                                    snackbarHostState.showSnackbar(msg ?: "No se pudo registrar el usuario")
                                 }
                             }
                         }
@@ -189,6 +213,8 @@ fun RegistroScreen(
             ) {
                 Text("Registrar", fontWeight = FontWeight.SemiBold)
             }
+
+
         }
     }
 }

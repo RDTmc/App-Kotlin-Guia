@@ -17,31 +17,51 @@ data class PagedProductsDto(
 @JsonClass(generateAdapter = true)
 data class ProductDto(
     @Json(name = "id") val id: String,
-    @Json(name = "categoryId") val categoryId: Int?,
+
+    // Soportamos ambos nombres que puede mandar el backend
+    @Json(name = "categoryId") val categoryId: Int? = null,
+    @Json(name = "category_id") val categoryIdSnake: Int? = null,
+
     @Json(name = "name") val name: String,
     @Json(name = "price") val price: Int,
-    @Json(name = "imagePath") val imagePath: String?,
-    @Json(name = "description") val description: String?,
-    @Json(name = "tags") val tags: List<String>?,
-    @Json(name = "sizes") val sizes: List<String>?
+
+    @Json(name = "imagePath") val imagePath: String? = null,
+    @Json(name = "image_path") val imagePathSnake: String? = null,
+
+    @Json(name = "description") val description: String? = null,
+    @Json(name = "tags") val tags: List<String>? = null,
+    @Json(name = "sizes") val sizes: List<String>? = null
 )
 
 /** Mapper: API → Dominio (en español) */
 fun ProductDto.toDomain(baseImageUrl: String? = null): Product {
-    // Si quisieras prefijar URL absolutas para imágenes relativas (img/...):
-    // val img = when {
-    //     imagePath.isNullOrBlank() -> ""
-    //     imagePath.startsWith("http", ignoreCase = true) -> imagePath
-    //     else -> "${baseImageUrl.orEmpty()}${if (baseImageUrl?.endsWith('/') == true) "" else "/"}$imagePath"
-    // }
-    val img = imagePath.orEmpty()
+    // 1) Resolver categoría desde camelCase o snake_case
+    val categoriaIdResuelta = (categoryId ?: categoryIdSnake)?.toString() ?: "Sin categoría"
+
+    // 2) Resolver ruta de imagen desde camelCase o snake_case
+    val rawImagePath = imagePath ?: imagePathSnake
+
+    // 3) Normalizar imagen:
+    //    - Si viene URL absoluta (http/https) → se usa tal cual (Supabase)
+    //    - Si viene relativa ("img/pg_brownie.png") + baseImageUrl → se concatena
+    //    - Si no hay nada → string vacío
+    val imagenFinal = when {
+        rawImagePath.isNullOrBlank() -> ""
+        rawImagePath.startsWith("http", ignoreCase = true) -> rawImagePath
+        baseImageUrl.isNullOrBlank() -> rawImagePath
+        else -> {
+            val base = baseImageUrl.trimEnd('/')
+            val path = rawImagePath.trimStart('/')
+            "$base/$path"
+        }
+    }
 
     return Product(
         id = id,
-        categoria = categoryId?.toString() ?: "Sin categoría",
+        categoria = categoriaIdResuelta,
         nombre = name,
         precio = price,
-        imagen = img,
+        imagen = imagenFinal,
         descripcion = description.orEmpty(),
         tags = tags ?: emptyList(),
         tamanos = sizes ?: emptyList()

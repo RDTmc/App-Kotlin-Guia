@@ -31,7 +31,7 @@ android {
         }
     }
 
-    // ✅ Usa el nuevo DSL (evita el warning de jvmTarget deprecated)
+    // Usa el nuevo DSL (evita el warning de jvmTarget deprecated)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -85,6 +85,9 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
 
+    // Test unitarios JVM (JUnit 4)
+    testImplementation("junit:junit:4.13.2")
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)          // = androidx.test.ext:junit:1.2.1
@@ -92,4 +95,5 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 }

@@ -5,11 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,15 +19,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.milsabores.appkotlin_guia.navigation.AppRoute
+import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
+import com.milsabores.appkotlin_guia.ui.theme.Chocolate
 import com.milsabores.appkotlin_guia.ui.util.resIdFor
 import com.milsabores.appkotlin_guia.viewmodel.CartUiState
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
 import androidx.compose.ui.graphics.Color
-import com.milsabores.appkotlin_guia.ui.theme.BlancoDos
-import com.milsabores.appkotlin_guia.ui.theme.Chocolate
 import kotlinx.coroutines.launch
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +39,6 @@ fun CartScreen(
     onLoginRequested: () -> Unit
 ) {
     val ui by vm.ui.collectAsState()
-    val ctx = LocalContext.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -88,10 +87,6 @@ fun CartScreen(
                             items = ui.items,
                             key = { it.productId to (it.size ?: "") }
                         ) { item ->
-                            // recordar la imagen por su nombre
-                            val imgRes = remember(item.image) {
-                                resIdFor(ctx, item.image ?: "")
-                            }
 
                             val onInc by rememberUpdatedState(newValue = { vm.inc(item.productId) })
                             val onDec by rememberUpdatedState(newValue = { vm.dec(item.productId) })
@@ -102,7 +97,7 @@ fun CartScreen(
                                 size = item.size,
                                 unitPrice = item.unitPrice,
                                 quantity = item.quantity,
-                                imageRes = imgRes,
+                                image = item.image,
                                 onInc = onInc,
                                 onDec = onDec,
                                 onRemove = onRemove
@@ -146,32 +141,57 @@ private fun CartItemRow(
     size: String?,
     unitPrice: Int,
     quantity: Int,
-    imageRes: Int,
+    image: String?,
     onInc: () -> Unit,
     onDec: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val isRemoteImage = remember(image) {
+        image?.startsWith("http", ignoreCase = true) == true
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (imageRes != 0) {
-            Image(
-                painter = painterResource(imageRes),
-                contentDescription = name,
-                modifier = Modifier
-                    .size(64.dp)
-                    .padding(end = 8.dp),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .padding(end = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("IMG")
+        when {
+            isRemoteImage -> {
+                AsyncImage(
+                    model = ImageRequest.Builder(ctx)
+                        .data(image)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = name,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .padding(end = 8.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            else -> {
+                val imageRes = remember(image) {
+                    resIdFor(ctx, image ?: "")
+                }
+                if (imageRes != 0) {
+                    Image(
+                        painter = painterResource(imageRes),
+                        contentDescription = name,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .padding(end = 8.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .padding(end = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("IMG")
+                    }
+                }
             }
         }
 
@@ -222,14 +242,6 @@ private fun SummarySection(
     onLoginRequested: () -> Unit,
     onContinue: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // ojo: si ya tienes un SnackbarHost en el Scaffold, pásale este mismo
-    LaunchedEffect(Unit) {
-        // nada, sólo para que exista el host
-    }
-
     Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier

@@ -44,6 +44,7 @@ import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.milsabores.appkotlin_guia.ui.screens.CheckoutSuccessScreen
+import com.milsabores.appkotlin_guia.ui.screens.DemoApiScreen
 import com.milsabores.appkotlin_guia.ui.screens.LoginScreen
 import com.milsabores.appkotlin_guia.ui.screens.MenuScreen
 import kotlinx.coroutines.flow.collectLatest
@@ -244,6 +245,11 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 catalogVm = catalogVm
                             )
+                        }
+
+                        // API EXTERNA
+                        composable(AppRoute.DemoApi.route) {
+                            DemoApiScreen()
                         }
 
                         // Carrito

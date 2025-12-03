@@ -78,7 +78,7 @@ fun ProfileScreen(
 
     val snack = remember { SnackbarHostState() }
 
-    // 💡 REMOVIDO: showPwdDialog y CambiarPasswordDialog
+    // REMOVIDO: showPwdDialog y CambiarPasswordDialog
 
     Scaffold(
         containerColor = BlancoDos,
@@ -133,7 +133,7 @@ fun ProfileScreen(
         )
 
         // Usuario autenticado → perfil editable
-        LazyColumn( // 💡 CAMBIO: Usamos LazyColumn para asegurar el scroll
+        LazyColumn( // CAMBIO: Usamos LazyColumn para asegurar el scroll
             modifier = Modifier
                 .padding(pv)
                 .fillMaxSize()
@@ -231,7 +231,7 @@ fun ProfileScreen(
                 ProfileOptionItem(
                     text = "Preferencias de Compra",
                     icon = Icons.Default.Star,
-                    // 💡 CAMBIO: onClick vacío
+                    // CAMBIO: onClick vacío
                     onClick = { /* TODO: Implementar navegación a Preferencias */ },
                     tintColor = Chocolate
                 )
@@ -239,7 +239,7 @@ fun ProfileScreen(
             }
 
 
-            // 💡 BOTONES DE ACCIÓN (Guardar / Cerrar Sesión)
+            // BOTONES DE ACCIÓN (Guardar / Cerrar Sesión)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -296,7 +296,7 @@ fun ProfileScreen(
     }
 }
 
-// 💡 Componente de lista reutilizable para las opciones de perfil
+// Componente de lista reutilizable para las opciones de perfil
 @Composable
 private fun ProfileOptionItem(
     text: String,
