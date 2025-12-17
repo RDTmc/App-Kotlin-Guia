@@ -12,6 +12,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+
+// >>> IMPORTS NUEVOS para ms-orders
+import com.milsabores.appkotlin_guia.data.remote.CreateOrderItemDto
+import com.milsabores.appkotlin_guia.data.remote.CreateOrderRequestDto
+import com.milsabores.appkotlin_guia.data.remote.OrdersRemoteRepository
+
 data class CartUiState(
     val items: List<CartItem> = emptyList(),
     val subtotal: Int = 0,
@@ -22,8 +28,9 @@ data class CartUiState(
 )
 
 class CartViewModel(
-    private val repo: CartRepository? = null,   // null en MVP, la inyectamos en MainActivity
-            private val orderRepo: OrderRepository? = null
+    private val repo: CartRepository? = null,          // Room (carrito local)
+    private val orderRepo: OrderRepository? = null,    // Room (historial de órdenes)
+    private val ordersRemote: OrdersRemoteRepository = OrdersRemoteRepository() // ms-orders
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(CartUiState())
@@ -113,57 +120,102 @@ class CartViewModel(
 
         viewModelScope.launch {
             try {
-                // si el repo tuviera una API replaceAll sería mejor.
-                // Ejecutamos clear() seguido de inserts secuenciales, pero esperamos a que termine todo.
                 r.clear()
                 items.forEach { ci ->
                     r.add(ci.toEntity())
                 }
-                // Sólo después de que la persistencia terminó, actualizamos UI local (optimista controlado)
-                // Nota: si Room emite la misma lista desde observeCart, el observer se encargará de la actualización.
-                // Aquí hacemos la actualización local para tener respuesta inmediata en caso de que el repo no emita.
-                val emitted = r.observeCart()?.let { flow ->
-                    // no bloqueante: preferimos actualizar local; la fuente de verdad seguirá siendo Room
-                    null
-                }
-                // Actualizar UI local para reflejar el estado final de la operación (reduce flicker al evitar emitir antes)
                 setItems(items)
             } catch (e: Exception) {
-                // Si hay error en persistencia, podríamos notificar al UI (no implementado aquí)
+                // aquí podrías notificar error a la UI si lo necesitas
             }
         }
     }
 
-    // Finalizar compra
-    fun placeOrder(
+    /**
+     * Finalizar compra contra ms-orders.
+     *
+     * @param token JWT emitido por ms-usuarios (SIN "Bearer ")
+     * @param address Dirección de envío / retiro
+     * @param date Fecha elegida (opcional, sólo para mostrar en Room)
+     * @param time Hora elegida (opcional, sólo para mostrar en Room)
+     * @param payment Método de pago ("CARD", "TRANSFER", "CASH", etc.)
+     * @param discountCode Código de promoción ingresado por el usuario (ej: "FELICES50")
+     * @param onResult Callback al terminar: (éxito, mensaje para mostrar)
+     */
+    fun placeOrderRemote(
+        token: String,
         address: String,
         date: String?,
         time: String?,
         payment: String,
-        // descuentos ya aplicados en UI → le pasamos shipping final y discount final
-        shipping: Int,
-        discount: Int
+        discountCode: String? = null,
+        onResult: (Boolean, String?) -> Unit
     ) {
         val snapshot = _ui.value
-        viewModelScope.launch {
-            // 1. guardar orden
-            orderRepo?.save(
-                OrderEntity(
-                    createdAt = System.currentTimeMillis(),
-                    address = address,
-                    date = date,
-                    time = time,
-                    payment = payment,
-                    subtotal = snapshot.subtotal,
-                    iva = snapshot.iva,
-                    shipping = shipping,
-                    discount = discount,
-                    total = snapshot.subtotal + snapshot.iva + shipping - discount
-                )
+
+        if (snapshot.items.isEmpty()) {
+            onResult(false, "El carrito está vacío")
+            return
+        }
+
+        // Construir el payload que espera ms-orders
+        val itemsDto = snapshot.items.map { ci ->
+            CreateOrderItemDto(
+                productId = ci.productId,
+                productName = ci.name,
+                image = ci.image,
+                unitPrice = ci.unitPrice,
+                quantity = ci.quantity,
+                size = ci.size,
+                flavor = ci.flavor
             )
-            // 2. limpiar carrito
-            repo ?.clear()
-            _ui.value = CartUiState() // limpiar UI
+        }
+
+        val request = CreateOrderRequestDto(
+            paymentMethod = payment,
+            shippingAddress = address,
+            items = itemsDto,
+            discountCode = discountCode
+        )
+
+        viewModelScope.launch {
+            try {
+                // 1) Crear orden en ms-orders (remoto, con JWT)
+                val orderResponse = ordersRemote.createOrder(
+                    token = token,
+                    request = request,
+                    userId = null   // ms-orders tomará userId desde el JWT (sub)
+                )
+
+                // 2) Guardar un registro local en Room (historial)
+                orderRepo?.save(
+                    OrderEntity(
+                        createdAt = System.currentTimeMillis(),
+                        address = address,
+                        date = date,
+                        time = time,
+                        payment = payment,
+                        subtotal = snapshot.subtotal,
+                        iva = snapshot.iva,
+                        shipping = snapshot.shipping,
+                        discount = snapshot.discount,
+                        total = snapshot.total
+                    )
+                )
+
+                // 3) Limpiar carrito local (Room + UI)
+                repo?.clear()
+                _ui.value = CartUiState()
+
+                val msg = if (!orderResponse.id.isNullOrBlank()) {
+                    "Orden creada correctamente (ID: ${orderResponse.id})"
+                } else {
+                    "Orden creada correctamente"
+                }
+                onResult(true, msg)
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Error al crear la orden en el servidor")
+            }
         }
     }
 
@@ -202,7 +254,6 @@ class CartViewModel(
             if (ai.flavor != bi.flavor) return false
             if (ai.quantity != bi.quantity) return false
             if (ai.unitPrice != bi.unitPrice) return false
-            // no comparamos name/image por ahora; si cambian con frecuencia pueden provocar recomposiciones
         }
         return true
     }

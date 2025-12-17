@@ -1,5 +1,6 @@
 package com.milsabores.appkotlin_guia
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -23,30 +26,12 @@ import androidx.navigation.navArgument
 import com.milsabores.appkotlin_guia.model.EstadoDataStore
 import com.milsabores.appkotlin_guia.navigation.AppRoute
 import com.milsabores.appkotlin_guia.navigation.NavigationEvent
-import com.milsabores.appkotlin_guia.ui.screens.CartScreen
-import com.milsabores.appkotlin_guia.ui.screens.CheckoutScreen
-import com.milsabores.appkotlin_guia.ui.screens.EntryScreen
-import com.milsabores.appkotlin_guia.ui.screens.HomeScreen
-import com.milsabores.appkotlin_guia.ui.screens.OnboardingScreen
-import com.milsabores.appkotlin_guia.ui.screens.PantallaEstado
-import com.milsabores.appkotlin_guia.ui.screens.ProfileScreen
-import com.milsabores.appkotlin_guia.ui.screens.RegistroScreen
-import com.milsabores.appkotlin_guia.ui.screens.ResumenScreen
-import com.milsabores.appkotlin_guia.ui.screens.SplashScreen
-import com.milsabores.appkotlin_guia.ui.screens.UsuariosListScreen
-import com.milsabores.appkotlin_guia.ui.screens.ProductDetailScreen
+import com.milsabores.appkotlin_guia.ui.screens.*
 import com.milsabores.appkotlin_guia.ui.theme.AppKotlin_GuiaTheme
-import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
-import com.milsabores.appkotlin_guia.viewmodel.CatalogViewModel
-import com.milsabores.appkotlin_guia.viewmodel.EstadoViewModel
-import com.milsabores.appkotlin_guia.viewmodel.MainViewModel
-import com.milsabores.appkotlin_guia.viewmodel.UsuarioViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.milsabores.appkotlin_guia.ui.screens.CheckoutSuccessScreen
-import com.milsabores.appkotlin_guia.ui.screens.DemoApiScreen
-import com.milsabores.appkotlin_guia.ui.screens.LoginScreen
-import com.milsabores.appkotlin_guia.ui.screens.MenuScreen
+import com.milsabores.appkotlin_guia.viewmodel.*
+import com.milsabores.appkotlin_guia.repository.AppDataBase
+import com.milsabores.appkotlin_guia.repository.CartRepository
+import com.milsabores.appkotlin_guia.repository.OrderRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -57,58 +42,48 @@ class MainActivity : ComponentActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-
-
-        // DataStore fuera del compose
+        // DataStore y Database
         val prefs = EstadoDataStore(applicationContext)
         val db = androidx.room.Room.databaseBuilder(
             applicationContext,
-            com.milsabores.appkotlin_guia.repository.AppDataBase::class.java,
+            AppDataBase::class.java,
             "milsabores-db"
         )
-            .fallbackToDestructiveMigration()   // 👈 BORRA y crea de nuevo si cambia versión
+            .fallbackToDestructiveMigration()
             .build()
 
-        val cartRepo = com.milsabores.appkotlin_guia.repository.CartRepository(db.cartDao())
-        val orderRepo = com.milsabores.appkotlin_guia.repository.OrderRepository(db.orderDao())
-
-
+        val cartRepo = CartRepository(db.cartDao())
+        val orderRepo = OrderRepository(db.orderDao())
 
         setContent {
             AppKotlin_GuiaTheme {
-                // VMs compartidos
+                // ViewModels compartidos
                 val mainVm: MainViewModel = viewModel()
                 val usuarioVm: UsuarioViewModel = viewModel()
                 val estadoVm: EstadoViewModel = viewModel()
+                val catalogVm: CatalogViewModel = viewModel()
+
+                // CartViewModel con ambos repositorios (sin Factory)
                 val cartVm: CartViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
-                                @Suppress("UNCHECKED_CAST")
-                                return CartViewModel(cartRepo, orderRepo) as T
-                            }
-                            throw IllegalArgumentException("Unknown ViewModel class")
-                        }
-                    }
+                    factory = CartViewModelFactory(application)
                 )
 
-
-                val catalogVm: CatalogViewModel = viewModel()
 
                 val navController = rememberNavController()
                 val scope = rememberCoroutineScope()
 
+                val userEmail by prefs.userEmail.collectAsState(initial = null)
+
                 // Flags de DataStore
                 val onboardingDone by prefs.onboardingDone.collectAsState(initial = false)
-                val guestMode     by prefs.guestMode.collectAsState(initial = false)
-                val isLoggedIn    by prefs.isLoggedIn.collectAsState(initial = false)
+                val guestMode by prefs.guestMode.collectAsState(initial = false)
+                val isLoggedIn by prefs.isLoggedIn.collectAsState(initial = false)
 
-                // carrito global (para badge, si lo quieres en algún layout root)
+                // Carrito global (para badge)
                 val cartUi by cartVm.ui.collectAsState()
                 val cartCount = remember(cartUi.items) { cartUi.items.sumOf { it.quantity } }
 
-
-                // Navegación desde el VM
+                // Navegación desde el ViewModel
                 LaunchedEffect(Unit) {
                     mainVm.navEvents.collectLatest { event ->
                         when (event) {
@@ -134,7 +109,6 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        // si ya vio onboarding, lo mandamos a Entry; si no, a Splash
                         startDestination = AppRoute.Splash.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
@@ -149,7 +123,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
 
                         // 2. Onboarding
                         composable(AppRoute.Onboarding.route) {
@@ -189,10 +162,9 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(AppRoute.Register.route)
                                 }
                             )
-
                         }
 
-                        // 4) LOGIN
+                        // 4. Login
                         composable(AppRoute.Login.route) {
                             LoginScreen(
                                 navController = navController,
@@ -216,7 +188,8 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Register.route) {
                             RegistroScreen(
                                 viewModel = usuarioVm,
-                                navController = navController)
+                                navController = navController
+                            )
                         }
 
                         // Perfil
@@ -239,6 +212,7 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoute.Resumen.route) {
                             ResumenScreen(usuarioVm)
                         }
+
                         // Menu
                         composable(AppRoute.Menu.route) {
                             MenuScreen(
@@ -264,6 +238,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Checkout
                         composable(AppRoute.Checkout.route) {
                             CheckoutScreen(
                                 navController = navController,
@@ -271,11 +246,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Checkout Success
                         composable(AppRoute.CheckoutSuccess.route) {
                             CheckoutSuccessScreen(navController)
                         }
-
-
 
                         // Detalle de producto product/{id}
                         composable(
@@ -287,7 +261,8 @@ class MainActivity : ComponentActivity() {
                             )
                         ) { backStackEntry ->
                             val productId =
-                                backStackEntry.arguments?.getString(AppRoute.Product.ARG_ID) ?: return@composable
+                                backStackEntry.arguments?.getString(AppRoute.Product.ARG_ID)
+                                    ?: return@composable
                             ProductDetailScreen(
                                 navController = navController,
                                 productId = productId,
@@ -300,5 +275,26 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+class CartViewModelFactory(
+    private val app: Application
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
+            val db = AppDataBase.getInstance(app)
+            val cartRepo = CartRepository(db.cartDao())
+            val orderRepo = OrderRepository(db.orderDao())
+
+            // 👇 AQUÍ simplemente retornas la instancia con ambos repos
+            return CartViewModel(
+                repo = cartRepo,
+                orderRepo = orderRepo
+            ) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
     }
 }

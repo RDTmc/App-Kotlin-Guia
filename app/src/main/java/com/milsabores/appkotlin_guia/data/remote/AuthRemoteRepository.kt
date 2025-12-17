@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 
 object AuthNetworkConfig {
     // Usa la IP/puerto reales de ms-usuarios
-    const val BASE_URL = "http://192.168.1.82:8082/api/"
+    const val BASE_URL = "http://192.168.1.83:8082/api/"
     const val DEBUG = true
 }
 

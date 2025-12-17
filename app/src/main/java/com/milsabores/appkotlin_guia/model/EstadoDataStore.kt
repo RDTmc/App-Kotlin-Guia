@@ -70,6 +70,7 @@ class EstadoDataStore(private val context: Context) {
         context.dataStore.edit {
             it[KEY_IS_LOGGED_IN] = false
             it.remove(KEY_USER_EMAIL)
+            it.remove(KEY_AUTH_TOKEN)   // Limpiar el JWT
             it[KEY_GUEST_MODE] = false
         }
     }

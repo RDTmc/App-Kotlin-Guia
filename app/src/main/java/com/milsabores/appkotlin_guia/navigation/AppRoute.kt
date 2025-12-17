@@ -5,25 +5,27 @@ sealed class AppRoute(val route:String) {
     data object Splash     : AppRoute("splash")
     data object Onboarding : AppRoute("onboarding")
     data object Entry      : AppRoute("entry")
-    data object Login : AppRoute("login")
-    data object Home:AppRoute("home")
-    data object Register: AppRoute("register")
-    data object Profile: AppRoute("profile")
-    data object Settings: AppRoute("settings")
+    data object Login      : AppRoute("login")
+    data object Home       : AppRoute("home")
+    data object Register   : AppRoute("register")
+    data object Profile    : AppRoute("profile")
+    data object Settings   : AppRoute("settings")
 
-    data object Resumen : AppRoute("resumen")
+    data object Resumen    : AppRoute("resumen")
 
-    data object Menu : AppRoute("menu")
+    data object Menu       : AppRoute("menu")
 
-    data object Estado : AppRoute("estado")
+    /**
+     * Pantalla de “estado / historial de pedidos”.
+     * Aquí mostraremos la lista de órdenes guardadas (tabla orders en Room).
+     */
+    data object Estado     : AppRoute("estado")
 
-    data object Cart : AppRoute("cart")
+    data object Cart       : AppRoute("cart")
     data object Checkout   : AppRoute("checkout")
     data object CheckoutSuccess : AppRoute("checkout_success")
 
-    data object DemoApi : AppRoute("demo_api")
-
-
+    data object DemoApi    : AppRoute("demo_api")
 
     data class Detail(val itemId: String) : AppRoute("detail/{itemId}") {
         fun buildRoute(): String = route.replace("{itemId}", itemId)

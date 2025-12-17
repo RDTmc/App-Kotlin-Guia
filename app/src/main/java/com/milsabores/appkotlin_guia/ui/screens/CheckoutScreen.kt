@@ -1,6 +1,7 @@
 package com.milsabores.appkotlin_guia.ui.screens
 
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,7 +14,9 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.milsabores.appkotlin_guia.navigation.AppRoute
@@ -22,6 +25,8 @@ import com.milsabores.appkotlin_guia.ui.theme.Chocolate
 import com.milsabores.appkotlin_guia.ui.theme.RosaClaro
 import com.milsabores.appkotlin_guia.viewmodel.CartUiState
 import com.milsabores.appkotlin_guia.viewmodel.CartViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -34,6 +39,7 @@ fun CheckoutScreen(
     isGuest: Boolean = false
 ) {
     val ui by cartVm.ui.collectAsState()
+    val scope = rememberCoroutineScope()
 
     var nombre by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
@@ -51,8 +57,12 @@ fun CheckoutScreen(
     var metodo by remember { mutableStateOf("Efectivo") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // NUEVO: modal para invitados
+    // Modal para invitados
     var showLoginModal by remember { mutableStateOf(false) }
+
+    // Estado de procesamiento y overlay
+    var isProcessing by remember { mutableStateOf(false) }
+    var showLoadingOverlay by remember { mutableStateOf(false) }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = Chocolate,
@@ -69,7 +79,7 @@ fun CheckoutScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    // si es invitado, primero login
+                    // Si es invitado, primero pedir login/registro
                     if (isGuest) {
                         showLoginModal = true
                         return@Button
@@ -83,11 +93,26 @@ fun CheckoutScreen(
                         error = "Tu carrito está vacío."
                         return@Button
                     }
-                    cartVm.clear()
-                    navController.navigate(AppRoute.CheckoutSuccess.route) {
-                        popUpTo(AppRoute.Checkout.route) { inclusive = true }
+
+                    // Iniciar procesamiento
+                    isProcessing = true
+                    showLoadingOverlay = true
+
+                    scope.launch {
+                        // Simular delay de procesamiento
+                        delay(4000)
+
+                        // Limpiar carrito y navegar
+                        cartVm.clear()
+                        showLoadingOverlay = false
+                        isProcessing = false
+
+                        navController.navigate(AppRoute.CheckoutSuccess.route) {
+                            popUpTo(AppRoute.Checkout.route) { inclusive = true }
+                        }
                     }
                 },
+                enabled = !isProcessing,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -96,114 +121,168 @@ fun CheckoutScreen(
                     contentColor = RosaClaro
                 )
             ) {
-                Text("Confirmar compra", fontWeight = FontWeight.SemiBold)
+                Text(
+                    if (isProcessing) "Procesando..." else "Confirmar compra",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     ) { pv ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(pv)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp)
-        ) {
-            item { Text("Datos de entrega", style = MaterialTheme.typography.titleMedium) }
-
-            item {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre completo") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(pv)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 90.dp
                 )
-            }
-            item {
-                OutlinedTextField(
-                    value = direccion,
-                    onValueChange = { direccion = it },
-                    label = { Text("Dirección de entrega") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors
-                )
-            }
+            ) {
+                item { Text("Datos de entrega", style = MaterialTheme.typography.titleMedium) }
 
-            // fila fecha + hora
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // fecha
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = fechaTexto,
-                            onValueChange = {},
-                            label = { Text("Fecha") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = textFieldColors
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showDatePicker = true }
-                        )
-                    }
+                item {
+                    OutlinedTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        label = { Text("Nombre completo") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors,
+                        enabled = !isProcessing
+                    )
+                }
 
-                    // hora
-                    Box(modifier = Modifier.weight(1f)) {
-                        ExposedDropdownMenuBox(
-                            expanded = horaExpanded,
-                            onExpandedChange = { horaExpanded = !horaExpanded }
-                        ) {
+                item {
+                    OutlinedTextField(
+                        value = direccion,
+                        onValueChange = { direccion = it },
+                        label = { Text("Dirección de entrega") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors,
+                        enabled = !isProcessing
+                    )
+                }
+
+                // Fila fecha + hora
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Fecha
+                        Box(modifier = Modifier.weight(1f)) {
                             OutlinedTextField(
-                                value = hora,
+                                value = fechaTexto,
                                 onValueChange = {},
+                                label = { Text("Fecha") },
                                 readOnly = true,
-                                label = { Text("Hora") },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth(),
-                                colors = textFieldColors
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = textFieldColors,
+                                enabled = !isProcessing
                             )
-                            ExposedDropdownMenu(
-                                expanded = horaExpanded,
-                                onDismissRequest = { horaExpanded = false }
+                            if (!isProcessing) {
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable { showDatePicker = true }
+                                )
+                            }
+                        }
+
+                        // Hora
+                        Box(modifier = Modifier.weight(1f)) {
+                            ExposedDropdownMenuBox(
+                                expanded = horaExpanded && !isProcessing,
+                                onExpandedChange = { if (!isProcessing) horaExpanded = !horaExpanded }
                             ) {
-                                horas.forEach { h ->
-                                    DropdownMenuItem(
-                                        text = { Text(h) },
-                                        onClick = {
-                                            hora = h
-                                            horaExpanded = false
-                                        }
-                                    )
+                                OutlinedTextField(
+                                    value = hora,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Hora") },
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth(),
+                                    colors = textFieldColors,
+                                    enabled = !isProcessing
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = horaExpanded && !isProcessing,
+                                    onDismissRequest = { horaExpanded = false }
+                                ) {
+                                    horas.forEach { h ->
+                                        DropdownMenuItem(
+                                            text = { Text(h) },
+                                            onClick = {
+                                                hora = h
+                                                horaExpanded = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            item { Text("Método de pago", style = MaterialTheme.typography.titleMedium) }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    PaymentRadio("Efectivo", metodo) { metodo = it }
-                    PaymentRadio("Transferencia", metodo) { metodo = it }
-                    PaymentRadio("Tarjeta / Webpay", metodo) { metodo = it }
+                item { Text("Método de pago", style = MaterialTheme.typography.titleMedium) }
+
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        PaymentRadio("Efectivo", metodo, !isProcessing) { metodo = it }
+                        PaymentRadio("Transferencia", metodo, !isProcessing) { metodo = it }
+                        PaymentRadio("Tarjeta / Webpay", metodo, !isProcessing) { metodo = it }
+                    }
+                }
+
+                item { SummaryCheckout(ui) }
+
+                if (error != null) {
+                    item { Text(error!!, color = MaterialTheme.colorScheme.error) }
                 }
             }
 
-            item { SummaryCheckout(ui) }
-
-            if (error != null) {
-                item { Text(error!!, color = MaterialTheme.colorScheme.error) }
+            // Loading Overlay
+            if (showLoadingOverlay) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .clickable(enabled = false) { },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.padding(32.dp),
+                        colors = CardDefaults.cardColors(containerColor = BlancoDos),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                color = Chocolate,
+                                strokeWidth = 4.dp,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                "Estamos procesando tu pago...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                color = Chocolate,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
-    // datepicker
-    if (showDatePicker) {
+    // DatePicker
+    if (showDatePicker && !isProcessing) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -219,7 +298,8 @@ fun CheckoutScreen(
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false },
+                TextButton(
+                    onClick = { showDatePicker = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
                 ) { Text("Cancelar") }
             }
@@ -228,27 +308,29 @@ fun CheckoutScreen(
         }
     }
 
-    // modal login / registro
+    // Modal login / registro para invitado
     if (showLoginModal) {
         AlertDialog(
             onDismissRequest = { showLoginModal = false },
             title = { Text("Inicia sesión") },
             text = { Text("Para finalizar tu compra debes iniciar sesión o crear tu cuenta.") },
             confirmButton = {
-                TextButton(onClick = {
-                    showLoginModal = false
-                    navController.navigate(AppRoute.Login.route)
-                },
+                TextButton(
+                    onClick = {
+                        showLoginModal = false
+                        navController.navigate(AppRoute.Login.route)
+                    },
                     colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
                 ) {
                     Text("Iniciar sesión")
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showLoginModal = false
-                    navController.navigate(AppRoute.Register.route)
-                },
+                TextButton(
+                    onClick = {
+                        showLoginModal = false
+                        navController.navigate(AppRoute.Register.route)
+                    },
                     colors = ButtonDefaults.textButtonColors(contentColor = Chocolate)
                 ) {
                     Text("Registrarme")
@@ -259,23 +341,35 @@ fun CheckoutScreen(
 }
 
 @Composable
-private fun PaymentRadio(label: String, selected: String, onSelected: (String) -> Unit) {
+private fun PaymentRadio(
+    label: String,
+    selected: String,
+    enabled: Boolean = true,
+    onSelected: (String) -> Unit
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         RadioButton(
             selected = selected == label,
-            onClick = { onSelected(label) },
+            onClick = { if (enabled) onSelected(label) },
+            enabled = enabled,
             colors = RadioButtonDefaults.colors(
-                selectedColor = Chocolate, // 💡 Color de selección
-            unselectedColor = Chocolate.copy(alpha = 0.7f)
+                selectedColor = Chocolate,
+                unselectedColor = Chocolate.copy(alpha = 0.7f)
             )
         )
-        Text(label, color = Chocolate)
+        Text(
+            label,
+            color = if (enabled) Chocolate else Chocolate.copy(alpha = 0.5f)
+        )
     }
 }
 
 @Composable
 private fun SummaryCheckout(ui: CartUiState) {
-    Surface(tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -291,7 +385,12 @@ private fun SummaryCheckout(ui: CartUiState) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Envío"); Text(formatCLP(ui.shipping))
             }
-            Divider()
+
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = Chocolate.copy(alpha = 0.2f)
+            )
+
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", fontWeight = FontWeight.Bold)
                 Text(formatCLP(ui.total), fontWeight = FontWeight.Bold)

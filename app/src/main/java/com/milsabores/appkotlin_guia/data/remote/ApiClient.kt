@@ -18,7 +18,7 @@ private object NetworkConfig {
     // Cambia a la IP actual de tu PC en la misma red del teléfono
     // Ej.: 192.168.1.82 según tu último mensaje
     // const val BASE_URL = "http://192.168.1.82:9090/api/"
-    const val BASE_URL = "http://192.168.1.82:8081/api/"
+    const val BASE_URL = "http://192.168.1.83:8081/api/"
 
     // Ejemplos alternativos (descomenta si los usas):
     // const val BASE_URL = "http://10.65.206.94:9090/api/"   // Datos móviles
