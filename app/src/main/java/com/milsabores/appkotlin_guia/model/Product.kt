@@ -13,7 +13,11 @@ data class Product(
     val descripcion: String,
     val tags: List<String> = emptyList(),
     val rating: Double = 4.8,
-    val tamanos: List<String> = emptyList()
+    val tamanos: List<String> = emptyList(),
+    // NUEVO: solo para mostrárselo al usuario
+    val hasDistributorDiscount: Boolean = false,
+    val discountLabel: String? = null,
+    val originalPrice: Int? = null
 )
 
 enum class HomeFilter {
